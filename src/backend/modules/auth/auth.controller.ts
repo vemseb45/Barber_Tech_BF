@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
-import { LoginSchema, RegistroSchema } from "./dto/auth.dto";
+import { RegistroSchema } from "./dto/register.dto";
+import { LoginSchema } from "./dto/login.dto";
 import { AuthService } from "./auth.service";
 import { apiResponse } from "@/backend/shared/utils/apiResponse";
 
@@ -23,4 +24,21 @@ export class AuthController {
     }
   }
 
+  static async login(req: NextRequest) {
+    try {
+      const body = await req.json();
+      
+      const validacion = LoginSchema.safeParse(body);
+      if (!validacion.success) {
+        return apiResponse(false, "Credenciales inválidas", validacion.error.flatten().fieldErrors, 400);
+      }
+
+      const usuario = await AuthService.login(validacion.data);
+
+      return apiResponse(true, "Inicio de sesión exitoso", usuario, 200);
+      
+    } catch (error: any) {
+      return apiResponse(false, error.message, null, 401);
+    }
+  }
 }
