@@ -1,0 +1,277 @@
+generator client {
+  provider        = "prisma-client-js"
+  engineType      = "binary"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// ======================================================
+/// ENUMS (Tipos de datos personalizados)
+/// ======================================================
+
+enum RolUsuario {
+  Cliente
+  Barbero
+  Admin
+  @@map("rol_usuario")
+}
+
+enum EstadoUsuario {
+  Activo
+  Inactivo
+  @@map("estado_usuario")
+}
+
+enum MetodoPago {
+  Nequi
+  Daviplata
+  PSE
+  Tarjeta_credito
+  Efectivo
+  @@map("metodo_pago_enum")
+}
+
+enum EstadoPago {
+  Pendiente
+  Aprobado
+  Rechazado
+  Fallido
+  @@map("estado_pago_enum")
+}
+
+enum DiaSemana {
+  Lunes
+  Martes
+  Miercoles
+  Jueves
+  Viernes
+  Sabado
+  Domingo
+  @@map("dia_semana_enum")
+}
+
+/// ======================================================
+/// TABLAS MAESTRAS (Padres)
+/// ======================================================
+
+
+
+model Barberia {
+  id_barberia Int    @id @default(autoincrement())
+  nombre      String @db.VarChar(50)
+  direccion   String @db.VarChar(100)
+  telefono    String @db.VarChar(20)
+  email       String @db.VarChar(100)
+
+  // Relaciones
+  barberos  BarberoDetalle[]
+  servicios Servicio[]
+
+  @@index([nombre])
+  @@map("tb_barberias")
+}
+
+
+
+
+/// ======================================================
+/// TABLA ESPECIALIDAD
+/// ======================================================
+
+model Especialidad {
+  id_especialidad Int    @id @default(autoincrement())
+  nombre          String @unique @db.VarChar(100)
+
+  // Relaciones
+  barberos  BarberoDetalle[]
+  servicios Servicio[]
+
+  @@index([nombre])
+  @@map("tb_especialidades")
+}
+
+/// ======================================================
+/// TABLA USUARIOS
+/// ======================================================
+
+model Usuario {
+  cedula         String        @id @db.VarChar(11)
+  nombre         String        @db.VarChar(100)
+  apellidos      String        @db.VarChar(100)
+  telefono       String        @unique @db.VarChar(20)
+  email          String        @unique @db.VarChar(100)
+  contrasena     String        @db.VarChar(255)
+  rol            RolUsuario    @default(Cliente)
+  estado         EstadoUsuario @default(Activo)
+  fecha_registro DateTime?     @default(now()) @db.Timestamp(6)
+
+  // Relaciones
+  detalle_barbero     BarberoDetalle?
+  agendas             AgendaBarbero[]
+  citas_cliente       Cita[]              @relation("CitasCliente")
+  citas_barbero       Cita[]              @relation("CitasBarbero")
+  tokens_recuperacion TokenRecuperacion[]
+
+  @@index([email])
+  @@index([rol])
+  @@index([estado])
+  @@index([nombre, apellidos])
+  @@map("tb_usuarios")
+}
+
+/// ======================================================
+/// TABLA RELACIONALES (Configuración de Barberos y Servicios)
+/// ======================================================
+
+model BarberoDetalle {
+  cedula          String @id @db.VarChar(11)
+  id_barberia     Int
+  id_especialidad Int?
+
+  // Relaciones
+  usuario      Usuario       @relation(fields: [cedula], references: [cedula], onDelete: Cascade)
+  barberia     Barberia      @relation(fields: [id_barberia], references: [id_barberia], onDelete: Cascade)
+  especialidad Especialidad? @relation(fields: [id_especialidad], references: [id_especialidad])
+
+  @@index([id_barberia])
+  @@index([id_especialidad])
+  @@map("tb_barbero_detalle")
+}
+/// ======================================================
+/// TABLA SERVICIOS
+/// ======================================================
+
+model Servicio {
+  id_servicio      Int     @id @default(autoincrement())
+  nombre           String  @db.VarChar(100)
+  descripcion      String? @db.VarChar(255)
+  precio           Decimal @db.Decimal(10, 2)
+  duracion_minutos Int
+  imagen           String? @db.VarChar(255) // Añadido desde tu modelo de Django
+  id_barberia      Int?
+  id_especialidad  Int?
+
+  // Relaciones
+  barberia     Barberia?     @relation(fields: [id_barberia], references: [id_barberia])
+  especialidad Especialidad? @relation(fields: [id_especialidad], references: [id_especialidad])
+  citas        Cita[]
+
+  @@index([id_barberia])
+  @@index([id_especialidad])
+  @@index([nombre])
+  @@map("tb_servicios")
+}
+
+
+
+/// ======================================================
+/// TABLA AGENDA DE  BARBEROS
+/// ======================================================
+
+model AgendaBarbero {
+  cedula_barbero String    @db.VarChar(11)
+  dia            DiaSemana
+  hora_inicio    DateTime  @db.Time()
+  hora_fin       DateTime  @db.Time()
+
+  usuario Usuario @relation(fields: [cedula_barbero], references: [cedula], onDelete: Cascade)
+
+  // Llave primaria compuesta
+  @@id([cedula_barbero, dia])
+  @@map("tb_agenda_barbero")
+}
+
+/// ======================================================
+/// TABLAS TRANSACCIONALES (Citas, Pagos, Calificaciones)
+/// ======================================================
+
+model Cita {
+  id_cita              Int      @id @default(autoincrement())
+  fecha                DateTime @db.Date
+  hora                 DateTime @db.Time()
+  estado               String   @default("PENT") @db.VarChar(20) // Agregado desde tu modelo Django (PENT, CONF, CANC)
+  cedula_cliente       String?  @db.VarChar(11)
+  cedula_barbero       String?  @db.VarChar(11)
+  id_servicio          Int?
+  recordatorio_enviado Boolean? @default(false)
+  encuesta_enviada     Boolean? @default(false)
+
+  // Relaciones
+  cliente      Usuario?      @relation("CitasCliente", fields: [cedula_cliente], references: [cedula])
+  barbero      Usuario?      @relation("CitasBarbero", fields: [cedula_barbero], references: [cedula])
+  servicio     Servicio?     @relation(fields: [id_servicio], references: [id_servicio])
+  pagos        Pago[]       // Relación 1 a muchos por si hay pagos fraccionados o intentos fallidos
+  calificacion Calificacion? // Relación 1 a 1
+
+  @@unique([fecha, hora, cedula_barbero])
+  @@index([cedula_barbero])
+  @@index([cedula_cliente])
+  @@index([fecha])
+  @@index([estado])
+  @@index([fecha, cedula_barbero]) // Índice compuesto clave para el calendario del barbero
+  @@map("tb_citas")
+}
+
+/// ======================================================
+/// TABLA PAGOS
+/// ======================================================
+
+model Pago {
+  id_pago            Int        @id @default(autoincrement())
+  id_cita            Int
+  valor              Decimal    @db.Decimal(10, 2)
+  metodo_pago        MetodoPago
+  referencia_externa String?    @db.VarChar(255)
+  estado             EstadoPago @default(Pendiente)
+  fecha_pago         DateTime?  @default(now()) @db.Timestamp(6)
+
+  // Relaciones
+  cita Cita @relation(fields: [id_cita], references: [id_cita], onDelete: Cascade)
+
+  @@index([estado])
+  @@index([id_cita])
+  @@index([fecha_pago])
+  @@map("tb_pagos")
+}
+
+/// ======================================================
+/// TABLA CALIFICACIONES
+/// ======================================================
+
+model Calificacion {
+  id_calificacion Int       @id @default(autoincrement())
+  id_cita         Int       @unique // Asegura que una cita solo tenga una calificación
+  puntuacion      Int
+  comentario      String?   @db.Text
+  fecha           DateTime? @default(now()) @db.Timestamp(6)
+
+  // Relaciones
+  cita Cita @relation(fields: [id_cita], references: [id_cita], onDelete: Cascade)
+
+  @@index([puntuacion])
+  @@index([id_cita])
+  @@map("tb_calificaciones")
+}
+
+/// ======================================================
+/// SEGURIDAD Y AUTENTICACIÓN
+/// ======================================================
+
+model TokenRecuperacion {
+  id_token   Int      @id @default(autoincrement())
+  usuario_id String   @db.VarChar(11)
+  token      String   @unique @default(uuid()) @db.Uuid
+  creado_en  DateTime @default(now()) @db.Timestamp(6)
+  usado      Boolean  @default(false)
+
+  // Relaciones
+  usuario Usuario @relation(fields: [usuario_id], references: [cedula], onDelete: Cascade)
+
+  @@index([usuario_id])
+  @@index([token])
+  @@index([usado, creado_en])
+  @@map("tb_token_recuperacion")
+}
