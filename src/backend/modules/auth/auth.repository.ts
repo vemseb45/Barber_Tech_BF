@@ -34,3 +34,10 @@ export async function updateUserOtp(cedula: string, otpHash: string | null, expi
     data: { otp_hash: otpHash, otp_expires_at: expiresAt },
   });
 }
+
+export async function updateUserPassword(cedula: string, passwordHash: string) {
+  return prisma.usuario.update({
+    where: { cedula },
+    data: { contrasena: passwordHash },
+  });
+}

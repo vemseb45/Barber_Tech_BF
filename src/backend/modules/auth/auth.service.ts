@@ -1,10 +1,8 @@
-import { findUserByEmail, findUserByCedula, createUser } from "./auth.repository";
-import { hashPassword, verifyPassword } from "@/backend/shared/password";
-import { createToken } from "./security/token.service";
+import { findUserByEmail, findUserByCedula, createUser, updateUserOtp, updateUserPassword } from "./auth.repository";
+import { hashPassword, verifyPassword, isScryptHash } from "@/backend/shared/password";
+import { createToken, createPreAuthToken } from "./security/token.service";
 import type { LoginInput, RegisterInput, LoginResult, RegisterResult, SessionUser } from "./auth.types";
 import { generateSecureOtp, hashOtp, sendOtpEmail, verifyEmailOtp } from "./security/email-otp.service";
-import { createPreAuthToken } from "./security/token.service";
-import { updateUserOtp } from "./auth.repository";
 
 function buildSessionUser(user: any): SessionUser {
   return {
@@ -22,11 +20,22 @@ export async function loginUser(input: LoginInput): Promise<LoginResult> {
     return { ok: false, message: "Credenciales inválidas o usuario inactivo." };
   }
 
-  const isPasswordValid = await verifyPassword(input.contrasena, user.contrasena);
+  const passwordDb = String(user.contrasena ?? "").trim();
+  const passwordIsHashed = isScryptHash(passwordDb);
+
+  const isPasswordValid = passwordIsHashed
+    ? await verifyPassword(input.contrasena, passwordDb)
+    : input.contrasena === passwordDb;
 
   if (!isPasswordValid) {
     return { ok: false, message: "Credenciales inválidas." };
   }
+
+  if (!passwordIsHashed) {
+    const newHash = await hashPassword(input.contrasena);
+    await updateUserPassword(user.cedula, newHash);
+  }
+
   const isMandatory2FA = user.rol === "Admin" || user.rol === "Barbero";
   const isOptional2FAEnabled = user.rol === "Cliente" && user.dos_factores_activo;
 
@@ -64,7 +73,6 @@ export async function verifyLogin2fa(cedula: string, code: string): Promise<Logi
 
   const isValid = verifyEmailOtp(code, user.otp_hash, user.otp_expires_at);
 
-  // Seguridad estricta (Single Use): Limpiamos el código haya acertado o fallado
   await updateUserOtp(cedula, null, null);
 
   if (!isValid) {
