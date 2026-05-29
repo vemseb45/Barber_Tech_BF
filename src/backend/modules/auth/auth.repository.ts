@@ -27,3 +27,10 @@ export async function createUser(data: RegisterInput, passwordHash: string) {
     },
   });
 }
+
+export async function updateUserOtp(cedula: string, otpHash: string | null, expiresAt: Date | null) {
+  return prisma.usuario.update({
+    where: { cedula },
+    data: { otp_hash: otpHash, otp_expires_at: expiresAt },
+  });
+}

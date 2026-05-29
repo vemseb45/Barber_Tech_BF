@@ -31,7 +31,14 @@ export type AuthFailure = {
   ok: false;
   message: string;
 };
+export type LoginRequires2FA = {
+  ok: true;
+  requires2FA: true;
+  preAuthToken: string;
+  message: string;
+};
 
-export type LoginResult = LoginSuccess | AuthFailure;
+
+export type LoginResult = LoginSuccess | AuthFailure | LoginRequires2FA;
 
 export type RegisterResult = { ok: true; user: SessionUser } | AuthFailure;

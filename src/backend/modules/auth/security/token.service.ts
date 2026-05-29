@@ -19,3 +19,17 @@ export function readToken(token: string): SessionUser | null {
     return null;
   }
 }
+
+export function createPreAuthToken(cedula: string): string {
+  const secret = AUTH_TOKEN_SECRET as string;
+  return jwt.sign({ cedula }, secret, { expiresIn: "5m" });
+}
+
+export function readPreAuthToken(token: string): { cedula: string } | null {
+  try {
+    const secret = AUTH_TOKEN_SECRET as string;
+    return jwt.verify(token, secret) as { cedula: string };
+  } catch {
+    return null;
+  }
+}

@@ -2,6 +2,9 @@ import { findUserByEmail, findUserByCedula, createUser } from "./auth.repository
 import { hashPassword, verifyPassword } from "@/backend/shared/password";
 import { createToken } from "./security/token.service";
 import type { LoginInput, RegisterInput, LoginResult, RegisterResult, SessionUser } from "./auth.types";
+import { generateSecureOtp, hashOtp, sendOtpEmail, verifyEmailOtp } from "./security/email-otp.service";
+import { createPreAuthToken } from "./security/token.service";
+import { updateUserOtp } from "./auth.repository";
 
 function buildSessionUser(user: any): SessionUser {
   return {
@@ -23,6 +26,49 @@ export async function loginUser(input: LoginInput): Promise<LoginResult> {
 
   if (!isPasswordValid) {
     return { ok: false, message: "Credenciales inválidas." };
+  }
+  const isMandatory2FA = user.rol === "Admin" || user.rol === "Barbero";
+  const isOptional2FAEnabled = user.rol === "Cliente" && user.dos_factores_activo;
+
+  if (isMandatory2FA || isOptional2FAEnabled) {
+    const otp = generateSecureOtp();
+    const hashedCode = hashOtp(otp);
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 min de validez
+    
+    await updateUserOtp(user.cedula, hashedCode, expiresAt);
+    sendOtpEmail(user.email, otp).catch(console.error); // Se envía asíncronamente
+    
+    const preAuthToken = createPreAuthToken(user.cedula);
+
+    return {
+      ok: true,
+      requires2FA: true,
+      preAuthToken,
+      message: "Código de seguridad enviado a tu correo.",
+    };
+  }
+
+  const sessionUser = buildSessionUser(user);
+  const token = createToken(sessionUser);
+  return { ok: true, user: sessionUser, token };
+}
+
+export async function verifyLogin2fa(cedula: string, code: string): Promise<LoginResult> {
+  const user = await findUserByCedula(cedula);
+  
+  if (!user) return { ok: false, message: "Usuario no encontrado." };
+
+  if (!user.otp_hash || !user.otp_expires_at) {
+    return { ok: false, message: "No existe un código pendiente o ha expirado." };
+  }
+
+  const isValid = verifyEmailOtp(code, user.otp_hash, user.otp_expires_at);
+
+  // Seguridad estricta (Single Use): Limpiamos el código haya acertado o fallado
+  await updateUserOtp(cedula, null, null);
+
+  if (!isValid) {
+    return { ok: false, message: "El código es incorrecto o ha caducado." };
   }
 
   const sessionUser = buildSessionUser(user);

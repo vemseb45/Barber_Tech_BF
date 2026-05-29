@@ -108,6 +108,11 @@ model Usuario {
   estado         EstadoUsuario @default(Activo)
   fecha_registro DateTime?     @default(now()) @db.Timestamp(6)
 
+  // 2FA
+  dos_factores_activo Boolean   @default(false)
+  otp_hash            String?   @db.VarChar(255)
+  otp_expires_at      DateTime? @db.Timestamp(6)
+
   // Relaciones
   detalle_barbero     BarberoDetalle?
   agendas             AgendaBarbero[]
@@ -119,6 +124,7 @@ model Usuario {
   @@index([rol])
   @@index([estado])
   @@index([nombre, apellidos])
+  @@index([otp_expires_at])
   @@map("tb_usuarios")
 }
 
