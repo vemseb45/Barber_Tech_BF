@@ -1,35 +1,47 @@
-import { AuthRepository } from "./auth.repository";
-import { RegistroDTO } from "./dto/register.dto";
-import { LoginDTO } from "./dto/login.dto";
+import { findUserByEmail, findUserByCedula, createUser } from "./auth.repository";
 import { hashPassword, verifyPassword } from "@/backend/shared/password";
+import { createToken } from "./security/token.service";
+import type { LoginInput, RegisterInput, LoginResult, RegisterResult, SessionUser } from "./auth.types";
 
-export class AuthService {
-  
-  static async registro(data: RegistroDTO) {
-    const existeEmail = await AuthRepository.findByEmail(data.email);
-    if (existeEmail) throw new Error("El correo ya está registrado.");
+function buildSessionUser(user: any): SessionUser {
+  return {
+    cedula: user.cedula,
+    email: user.email,
+    nombre: `${user.nombre} ${user.apellidos}`.trim(),
+    rol: user.rol,
+  };
+}
 
-    const existeCedula = await AuthRepository.findByCedula(data.cedula);
-    if (existeCedula) throw new Error("La cédula ya está registrada.");
+export async function loginUser(input: LoginInput): Promise<LoginResult> {
+  const user = await findUserByEmail(input.email);
 
-    const hashedPassword = await hashPassword(data.contrasena);
-    return await AuthRepository.createUsuario(data, hashedPassword);
+  if (!user || user.estado !== "Activo") {
+    return { ok: false, message: "Credenciales inválidas o usuario inactivo." };
   }
 
-  static async login(data: LoginDTO) {
-    const usuario = await AuthRepository.findByEmail(data.email);
-    
-    if (!usuario || usuario.estado !== "Activo") {
-      throw new Error("Credenciales inválidas o usuario inactivo.");
-    }
+  const isPasswordValid = await verifyPassword(input.contrasena, user.contrasena);
 
-    const isPasswordValid = await verifyPassword(data.contrasena, usuario.contrasena);
-
-    if (!isPasswordValid) {
-      throw new Error("Credenciales inválidas.");
-    }
-
-    const { contrasena, ...usuarioSinPassword } = usuario;
-    return usuarioSinPassword;
+  if (!isPasswordValid) {
+    return { ok: false, message: "Credenciales inválidas." };
   }
+
+  const sessionUser = buildSessionUser(user);
+  const token = createToken(sessionUser);
+
+  return { ok: true, user: sessionUser, token };
+}
+
+export async function registerUser(input: RegisterInput): Promise<RegisterResult> {
+  const emailExists = await findUserByEmail(input.email);
+  if (emailExists) return { ok: false, message: "El correo ya está registrado." };
+
+  const cedulaExists = await findUserByCedula(input.cedula);
+  if (cedulaExists) return { ok: false, message: "La cédula ya está registrada." };
+
+  const hashedPassword = await hashPassword(input.contrasena);
+  const newUser = await createUser(input, hashedPassword);
+
+  const sessionUser = buildSessionUser(newUser);
+
+  return { ok: true, user: sessionUser };
 }

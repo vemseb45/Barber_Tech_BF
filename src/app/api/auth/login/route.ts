@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
-import { AuthController } from "@/backend/modules/auth/auth.controller";
+import { loginController } from "@/backend/modules/auth/auth.controller";
 
 export async function POST(req: NextRequest) {
-  return AuthController.login(req);
+  return loginController(req);
 }

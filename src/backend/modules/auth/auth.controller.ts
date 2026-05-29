@@ -1,78 +1,78 @@
-import { NextRequest } from "next/server";
-import { cookies } from "next/headers";
-import { RegistroSchema } from "./dto/register.dto";
-import { LoginSchema } from "./dto/login.dto";
-import { AuthService } from "./auth.service";
-import { apiResponse } from "@/backend/shared/utils/apiResponse";
-import { generateToken } from "./security/token.service";
-import { AUTH_COOKIE_NAME, AUTH_SESSION_HOURS } from "./auth.constants";
+import { NextRequest, NextResponse } from "next/server";
+import { loginSchema } from "./validators/login.validator";
+import { registerSchema } from "./validators/register.validator";
+import { loginUser, registerUser } from "./auth.service";
+import { setSessionCookie, clearSessionCookie } from "./security/session.service";
 import { getSessionUser } from "@/backend/shared/get-session-user";
 
-export class AuthController {
+async function readJsonBody(req: NextRequest) {
+  const text = await req.text();
+  if (!text) return null;
+  return JSON.parse(text);
+}
+
+export async function loginController(req: NextRequest) {
+  try {
+    const body = await readJsonBody(req);
+    const parsed = loginSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { ok: false, message: "Datos inválidos", errors: parsed.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const result = await loginUser(parsed.data);
+
+    if (!result.ok) {
+      return NextResponse.json({ ok: false, message: result.message }, { status: 401 });
+    }
+
+    await setSessionCookie(result.token);
+
+    return NextResponse.json({ ok: true, user: result.user }, { status: 200 });
+  } catch (error) {
+    return NextResponse.json({ ok: false, message: "Error interno" }, { status: 500 });
+  }
+}
+
+export async function registerController(req: NextRequest) {
+  try {
+    const body = await readJsonBody(req);
+    const parsed = registerSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { ok: false, message: "Datos inválidos", errors: parsed.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const result = await registerUser(parsed.data);
+
+    if (!result.ok) {
+      return NextResponse.json({ ok: false, message: result.message }, { status: 400 });
+    }
+
+    return NextResponse.json({ ok: true, message: "Usuario creado", user: result.user }, { status: 201 });
+  } catch (error) {
+    return NextResponse.json({ ok: false, message: "Error interno" }, { status: 500 });
+  }
+}
+
+export async function meController(req: NextRequest) {
+  const session = await getSessionUser();
+
+  if (!session) {
+    return NextResponse.json({ ok: false, message: "No autorizado" }, { status: 401 });
+  }
+
+  return NextResponse.json({ ok: true, user: session }, { status: 200 });
+}
+
+export async function logoutController(req: NextRequest) {
+  await clearSessionCookie();
   
-  static async registro(req: NextRequest) {
-    try {
-      const body = await req.json();
-      const validacion = RegistroSchema.safeParse(body);
-      if (!validacion.success) {
-        return apiResponse(false, "Error en los datos enviados", validacion.error.flatten().fieldErrors, 400);
-      }
-
-      const nuevoUsuario = await AuthService.registro(validacion.data);
-      return apiResponse(true, "Usuario registrado correctamente", nuevoUsuario, 201);
-    } catch (error: any) {
-      return apiResponse(false, error.message, null, 400);
-    }
-  }
-
-  static async login(req: NextRequest) {
-    try {
-      const body = await req.json();
-      const validacion = LoginSchema.safeParse(body);
-      if (!validacion.success) {
-        return apiResponse(false, "Credenciales inválidas", validacion.error.flatten().fieldErrors, 400);
-      }
-
-      const usuario = await AuthService.login(validacion.data);
-
-      const tokenPayload = {
-        cedula: usuario.cedula,
-        email: usuario.email,
-        nombre: usuario.nombre,
-        rol: usuario.rol,
-      };
-
-      const token = generateToken(tokenPayload);
-
-      const cookieStore = await cookies();
-      cookieStore.set(AUTH_COOKIE_NAME, token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: AUTH_SESSION_HOURS * 60 * 60,
-        path: "/",
-      });
-
-      return apiResponse(true, "Inicio de sesión exitoso", { user: tokenPayload }, 200);
-      
-    } catch (error: any) {
-      return apiResponse(false, error.message, null, 401);
-    }
-  }
-
-  static async me(req: NextRequest) {
-    const session = await getSessionUser();
-    
-    if (!session) {
-      return apiResponse(false, "No autorizado", null, 401);
-    }
-
-    return apiResponse(true, "Sesión activa", { user: session }, 200);
-  }
-
-  static async logout(req: NextRequest) {
-    const cookieStore = await cookies();
-    cookieStore.delete(AUTH_COOKIE_NAME);
-    return apiResponse(true, "Sesión cerrada correctamente", null, 200);
-  }
+  return NextResponse.json({ ok: true, message: "Sesión cerrada" }, { status: 200 });
 }
