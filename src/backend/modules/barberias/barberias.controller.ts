@@ -5,17 +5,16 @@ import { BarberiasService } from "./barberias.service";
 import { CreateBarberiaSchema, UpdateBarberiaSchema } from "./validators/barberia.validator";
 
 export class BarberiasController {
-  
+
   /**
    * [GET] Listar todas las Barberías
    * Regla: Cualquier usuario autenticado (Admin, Barbero, Cliente)
    */
   static async getAll(req: NextRequest) {
     try {
+      // CORRECCIÓN: Se retira 'req' porque la función no recibe parámetros
       const session = await getSessionUser();
-      if (!session) {
-        return apiResponse(false, "No estás autenticado.", null, 401);
-      }
+      if (!session) return apiResponse(false, "No estás autenticado.", null, 401);
 
       const barberias = await BarberiasService.getAllBarberias();
       return apiResponse(true, "Barberías obtenidas exitosamente", barberias, 200);
@@ -28,14 +27,12 @@ export class BarberiasController {
    * [GET] Obtener una Barbería individual
    * Regla: Cualquier usuario autenticado (Admin, Barbero, Cliente)
    */
-  static async getById(req: NextRequest, id: number) {
+  static async getByOne(req: NextRequest, identificador: string) {
     try {
       const session = await getSessionUser();
-      if (!session) {
-        return apiResponse(false, "No estás autenticado.", null, 401);
-      }
+      if (!session) return apiResponse(false, "No estás autenticado.", null, 401);
 
-      const barberia = await BarberiasService.getBarberiaById(id);
+      const barberia = await BarberiasService.getBarberiaByIdentificador(identificador);
       return apiResponse(true, "Barbería encontrada", barberia, 200);
     } catch (error: any) {
       return apiResponse(false, error.message, null, 404);
@@ -49,7 +46,7 @@ export class BarberiasController {
   static async create(req: NextRequest) {
     try {
       const session = await getSessionUser();
-      // Protección de ruta a nivel controlador
+
       if (!session || session.rol !== "Admin") {
         return apiResponse(false, "Acceso denegado. Se requiere el rol Admin.", null, 403);
       }
@@ -72,9 +69,10 @@ export class BarberiasController {
    * [PUT] Actualizar una Barbería
    * Regla de negocio estricta: Solo Admin
    */
-  static async update(req: NextRequest, id: number) {
+  static async update(req: NextRequest, identificador: string) {
     try {
       const session = await getSessionUser();
+
       if (!session || session.rol !== "Admin") {
         return apiResponse(false, "Acceso denegado. Se requiere el rol Admin.", null, 403);
       }
@@ -86,7 +84,7 @@ export class BarberiasController {
         return apiResponse(false, "Datos inválidos", validacion.error.flatten().fieldErrors, 400);
       }
 
-      const barberiaActualizada = await BarberiasService.updateBarberia(id, validacion.data);
+      const barberiaActualizada = await BarberiasService.updateBarberia(identificador, validacion.data);
       return apiResponse(true, "Barbería actualizada correctamente", barberiaActualizada, 200);
     } catch (error: any) {
       return apiResponse(false, error.message, null, 400);
@@ -97,14 +95,15 @@ export class BarberiasController {
    * [DELETE] Eliminar una Barbería
    * Regla de negocio estricta: Solo Admin
    */
-  static async delete(req: NextRequest, id: number) {
+  static async delete(req: NextRequest, identificador: string) {
     try {
       const session = await getSessionUser();
+
       if (!session || session.rol !== "Admin") {
         return apiResponse(false, "Acceso denegado. Se requiere el rol Admin.", null, 403);
       }
 
-      const barberiaEliminada = await BarberiasService.deleteBarberia(id);
+      const barberiaEliminada = await BarberiasService.deleteBarberia(identificador);
       return apiResponse(true, "Barbería eliminada correctamente", barberiaEliminada, 200);
     } catch (error: any) {
       return apiResponse(false, error.message, null, 400);

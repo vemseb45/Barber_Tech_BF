@@ -2,15 +2,27 @@ import { BarberiasRepository } from "./barberias.repository";
 import { CreateBarberiaDTO, UpdateBarberiaDTO } from "./dto/barberia.dto";
 
 export class BarberiasService {
-  
+
   static async getAllBarberias() {
     return await BarberiasRepository.findAll();
   }
 
-  static async getBarberiaById(id: number) {
-    const barberia = await BarberiasRepository.findById(id);
+  static async getBarberiaByIdentificador(identificador: string) {
+
+    const valorDecodificado = decodeURIComponent(identificador);
+
+    const esNumero = /^\d+$/.test(valorDecodificado);
+
+    let barberia;
+
+    if (esNumero) {
+      barberia = await BarberiasRepository.findById(Number(valorDecodificado));
+    } else {
+      barberia = await BarberiasRepository.findByNombre(valorDecodificado);
+    }
+
     if (!barberia) {
-      throw new Error("La barbería no fue encontrada.");
+      throw new Error(`La barbería '${valorDecodificado}' no fue encontrada.`);
     }
     return barberia;
   }
@@ -31,20 +43,26 @@ export class BarberiasService {
   }
 
   static async createBarberia(data: CreateBarberiaDTO) {
-    // 1. Aplicar regla de negocio para evitar duplicados en email o teléfono
     await this.checkDuplicates(data.email, data.telefono);
-    // 2. Transmitir al repositorio
     return await BarberiasRepository.create(data);
   }
 
-  static async updateBarberia(id: number, data: UpdateBarberiaDTO) {
-    await this.getBarberiaById(id);
-    await this.checkDuplicates(data.email, data.telefono, id);
-    return await BarberiasRepository.update(id, data);
+  static async updateBarberia(identificador: string, data: UpdateBarberiaDTO) {
+    // 1. Obtenemos el registro actual (sea por nombre o ID)
+    const barberiaExistente = await this.getBarberiaByIdentificador(identificador);
+
+    // 2. Verificamos duplicados excluyendo el ID actual
+    await this.checkDuplicates(data.email, data.telefono, barberiaExistente.id_barberia);
+
+    // 3. Actualizamos en base al ID real obtenido
+    return await BarberiasRepository.update(barberiaExistente.id_barberia, data);
   }
 
-  static async deleteBarberia(id: number) {
-    await this.getBarberiaById(id);
-    return await BarberiasRepository.delete(id);
+  static async deleteBarberia(identificador: string) {
+    // 1. Obtenemos la barbería (valida que exista)
+    const barberiaExistente = await this.getBarberiaByIdentificador(identificador);
+
+    // 2. Eliminamos mediante el ID real
+    return await BarberiasRepository.delete(barberiaExistente.id_barberia);
   }
 }

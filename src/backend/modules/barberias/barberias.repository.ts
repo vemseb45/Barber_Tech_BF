@@ -20,6 +20,16 @@ export class BarberiasRepository {
     });
   }
 
+  static async findByNombre(nombre: string) {
+    return prisma.barberia.findFirst({
+      where: {
+        nombre: {
+          equals: nombre, 
+        }
+      },
+    });
+  }
+
   /**
    * Busca si existe alguna barbería que utilice el mismo email o teléfono.
    */
