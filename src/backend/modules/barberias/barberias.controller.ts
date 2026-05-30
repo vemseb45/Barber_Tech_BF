@@ -12,7 +12,6 @@ export class BarberiasController {
    */
   static async getAll(req: NextRequest) {
     try {
-      // CORRECCIÓN: Se retira 'req' porque la función no recibe parámetros
       const session = await getSessionUser();
       if (!session) return apiResponse(false, "No estás autenticado.", null, 401);
 
