@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #8519d2;
+  --color-dark-bg: #0a0a0f;
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+* {
+  @apply transition-colors duration-300;
+}
+
+@layer base {
+  html {
+    font-size: 18px;
+    /* Restaurado el estándar de 16px para mejor proporción */
+  }
+
+  /* Ocultar el ícono de ojo nativo de Edge/IE y Chrome para la contraseña */
+  input[type="password"]::-ms-reveal,
+  input[type="password"]::-ms-clear {
+    display: none;
+  }
+
+  input[type="password"]::-webkit-reveal,
+  input[type="password"]::-webkit-contacts-auto-fill-button,
+  input[type="password"]::-webkit-credentials-auto-fill-button {
+    display: none !important;
+  }
+}
+
+/* 🔥 SCROLL PRO GLOBAL */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5f5; /* slate-300 */
+  border-radius: 9999px;
+  transition: background 0.3s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8; /* slate-400 */
+}
+
+/* 🌙 DARK MODE */
+.dark ::-webkit-scrollbar-thumb {
+  background: #475569; /* slate-600 */
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #64748b; /* slate-500 */
+}
+
+.scroll-pro::-webkit-scrollbar {
+  width: 0px;
+}
+
+.scroll-pro:hover::-webkit-scrollbar {
+  width: 6px;
+}
+
+@layer components {
+  .input {
+    @apply w-full px-4 py-3 rounded-xl 
+    bg-slate-50 dark:bg-slate-900/50 
+    border border-slate-200 dark:border-slate-700 
+    outline-none 
+    focus:ring-4 focus:ring-primary/10 
+    focus:border-primary
+    transition-all 
+    font-medium 
+    text-slate-700 dark:text-white
+    placeholder:text-slate-400 dark:placeholder:text-slate-500;
+  }
+
+  .input:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+}
