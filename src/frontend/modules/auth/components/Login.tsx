@@ -45,10 +45,14 @@ export default function Login() {
     setIsLoading(true); 
 
     try {
-      const response = await fetch("http://localhost:8000/api/usuarios/login/", {
+      // 1. Ajustamos las claves para que coincidan con tu backend: email y contrasena
+      const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: email, password })
+        body: JSON.stringify({ 
+          email: email, 
+          contrasena: password 
+        })
       });
 
       const data = await response.json();
@@ -77,7 +81,7 @@ export default function Login() {
 
       if (userRole === "admin") router.push("/dashboardAdmin");
       else if (userRole === "barbero") router.push("/dashboardBarbero");
-      else router.push("/dashboardCliente");
+      else router.push("/cliente");
 
     } catch (error) {
       console.error("Error:", error);
@@ -127,8 +131,9 @@ export default function Login() {
 
             <div className="space-y-5 text-left mt-8">
               <div>
-                <label className="text-xs font-bold mb-2 block ml-1 opacity-70">Usuario</label>
-                <input type="text" placeholder="Tu nombre de usuario" className="w-full p-4 rounded-2xl bg-slate-100 dark:bg-white/5 border border-transparent focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all text-sm font-medium" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                {/* 2. Cambiamos visualmente a Correo para que tenga sentido con tu API */}
+                <label className="text-xs font-bold mb-2 block ml-1 opacity-70">Correo</label>
+                <input type="email" placeholder="ejemplo@gmail.com" className="w-full p-4 rounded-2xl bg-slate-100 dark:bg-white/5 border border-transparent focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all text-sm font-medium" value={email} onChange={(e) => setEmail(e.target.value)} required />
               </div>
               <div>
                 <label className="text-xs font-bold mb-2 block ml-1 opacity-70">Contraseña</label>
@@ -147,7 +152,7 @@ export default function Login() {
                   </div>
                   <span className="text-xs font-bold text-slate-500 dark:text-slate-400 group-hover:text-primary transition-colors">Recordar contraseña</span>
                 </label>
-                <Link href="/forgot-password" className="text-xs font-bold text-primary hover:underline transition-colors focus:outline-none">¿Olvidaste tu contraseña?</Link>
+                <Link href="/recovery" className="text-xs font-bold text-primary hover:underline transition-colors focus:outline-none">¿Olvidaste tu contraseña?</Link>
               </div>
             </div>
 
@@ -155,7 +160,7 @@ export default function Login() {
               <button type="submit" disabled={isLoading} className="w-full bg-primary hover:bg-[#7112b3] text-white font-black py-4 rounded-2xl shadow-xl shadow-primary/30 transition-all active:scale-95 cursor-pointer uppercase tracking-widest text-sm disabled:opacity-50 disabled:cursor-not-allowed">
                 {isLoading ? "Conectando..." : "Ingresar"}
               </button>
-              <p className="mt-6 text-xs text-slate-500 dark:text-slate-400 font-medium">¿No tienes cuenta? <Link href="/register" className="text-primary font-bold hover:underline">Registrarse gratis</Link></p>
+              <p className="mt-6 text-xs text-slate-500 dark:text-slate-400 font-medium">¿No tienes cuenta? <Link href="/registro" className="text-primary font-bold hover:underline">Registrarse gratis</Link></p>
             </div>
           </form>
         </motion.div>

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, AlertCircle, CheckCircle2, Lock, KeyRound } from "lucide-react";
-import api from "@/app/api/axios"; 
+import api from "@/app/api/axios";
 
 export default function ResetPassword() {
   const params = useParams();
@@ -37,7 +37,11 @@ export default function ResetPassword() {
     setError("");
     setSuccessMsg("");
     try {
-      await api.post("/recuperacion/restablecer/", { token: token, password: password });
+      await api.post("/api/auth/recovery/reset", {
+        token: token,
+        newPassword: password
+      });
+
       setSuccessMsg("¡Contraseña actualizada con éxito! Redirigiendo...");
       setTimeout(() => { router.push('/login'); }, 2500);
     } catch (err: any) {

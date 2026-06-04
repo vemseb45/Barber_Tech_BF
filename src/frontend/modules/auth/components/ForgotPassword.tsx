@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, AlertCircle, Mail, Hammer, CheckCircle2 } from "lucide-react";
-import api from "@/app/api/axios"; 
+import api from "@/app/api/axios";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState<string>("");
@@ -22,7 +22,7 @@ export default function ForgotPassword() {
     const value = e.target.value;
     setEmail(value);
     validateEmail(value);
-    if (successMsg) setSuccessMsg(""); 
+    if (successMsg) setSuccessMsg("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,9 +32,11 @@ export default function ForgotPassword() {
     setError("");
     setSuccessMsg("");
     try {
-      const res = await api.post('/recuperacion/solicitar/', { email });
+      // Aquí agregamos { email } para que el backend sepa a quién buscar
+      const res = await api.post('/api/auth/recovery/request', { email });
+
       setSuccessMsg(res.data.message || 'Si el correo está registrado, te enviaremos las instrucciones.');
-      setEmail(""); 
+      setEmail("");
     } catch (err: any) {
       setError(err.response?.data?.error || 'Hubo un error al procesar tu solicitud.');
     } finally {

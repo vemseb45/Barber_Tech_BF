@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+// IMPORTANTE: Asegúrate de importar AnimatePresence
+import { motion, AnimatePresence } from "framer-motion";
 import { Sun, Moon, Eye, EyeOff, ArrowLeft, Check, X } from "lucide-react";
 
 function RequirementItem({ met, text }: { met: boolean; text: string }) {
@@ -22,8 +23,12 @@ export default function Register() {
   const [passRequirements, setPassRequirements] = useState({
     length: false, upper: false, lower: false, number: false, special: false
   });
+  
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  // NUEVO ESTADO: Para controlar si el campo de contraseña está enfocado
+  const [isPasswordFocused, setIsPasswordFocused] = useState(false);
+  
   const [darkMode, setDarkMode] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -83,15 +88,28 @@ export default function Register() {
 
     setIsLoading(true);
     try {
-      const { confirmPassword, ...dataToSend } = formData;
-      const response = await fetch("http://localhost:8000/api/usuarios/registro/", {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(dataToSend)
+      const dataToSend = {
+        cedula: formData.cedula,
+        nombre: formData.first_name,
+        apellidos: formData.last_name,
+        telefono: formData.telefono,
+        email: formData.email,
+        contrasena: formData.password
+      };
+
+      const response = await fetch("/api/auth/registro", {
+        method: "POST", 
+        headers: { "Content-Type": "application/json" }, 
+        body: JSON.stringify(dataToSend)
       });
+      
       const data = await response.json();
+      
       if (!response.ok) {
         alert(data.message || "Error al registrar usuario");
         return;
       }
+      
       alert("¡Usuario registrado con éxito!");
       router.push("/login");
     } catch (error) {
@@ -128,39 +146,78 @@ export default function Register() {
               <span className="text-primary text-[10px] font-black tracking-[3px] uppercase block mb-2">Únete a la experiencia</span>
               <h2 className="text-3xl sm:text-4xl font-black mb-2 tracking-tight text-slate-900 dark:text-white">Crea tu <span className="text-primary">Cuenta</span></h2>
             </div>
-            {/* Campos simplificados por legibilidad, puedes mantener tu array de map() aquí igual */}
+            
              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 mb-6 text-left">
+              {/* Se agregó "colSpan" para mejorar el orden. El correo ocupa 2 columnas */}
               {[
-                { label: "Usuario", name: "username", type: "text", placeholder: "Pepito01" },
-                { label: "Correo", name: "email", type: "email", placeholder: "ejemplo@gmail.com" },
-                { label: "Nombres", name: "first_name", type: "text", placeholder: "Tus nombres" },
-                { label: "Apellidos", name: "last_name", type: "text", placeholder: "Tus apellidos" },
-                { label: "Cédula", name: "cedula", type: "text", placeholder: "12345678", max: 10 },
-                { label: "Teléfono", name: "telefono", type: "text", placeholder: "300...", max: 10 },
+                { label: "Correo", name: "email", type: "email", placeholder: "ejemplo@gmail.com", colSpan: "md:col-span-2" },
+                { label: "Nombres", name: "first_name", type: "text", placeholder: "Tus nombres", colSpan: "md:col-span-1" },
+                { label: "Apellidos", name: "last_name", type: "text", placeholder: "Tus apellidos", colSpan: "md:col-span-1" },
+                { label: "Cédula", name: "cedula", type: "text", placeholder: "12345678", max: 10, colSpan: "md:col-span-1" },
+                { label: "Teléfono", name: "telefono", type: "text", placeholder: "300...", max: 10, colSpan: "md:col-span-1" },
               ].map((field) => (
-                <div key={field.name}>
+                <div key={field.name} className={field.colSpan}>
                   <label className="text-[10px] font-black mb-1.5 block ml-1 uppercase opacity-60">{field.label}</label>
                   <input type={field.type} name={field.name} value={(formData as any)[field.name]} onChange={handleChange} maxLength={field.max} placeholder={field.placeholder} className={inputClass(field.name)} required />
                   {fieldErrors[field.name] && <p className="text-[10px] text-red-500 font-bold mt-1 ml-2 italic">{fieldErrors[field.name]}</p>}
                 </div>
               ))}
-              <div className="md:col-span-1">
+              
+              {/* CAMPO DE CONTRASEÑA CON TOOLTIP FLOTANTE */}
+              <div className="md:col-span-1 relative">
                 <label className="text-[10px] font-black mb-1.5 block ml-1 uppercase opacity-60">Contraseña</label>
+                
+                {/* TOOLTIP FLOTANTE DE SEGURIDAD */}
+                <AnimatePresence>
+                  {isPasswordFocused && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
+                      // Absoluto por encima del input (bottom-full)
+                      className="absolute bottom-full left-0 mb-3 w-[110%] p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-white/10 shadow-2xl z-50"
+                    >
+                      {/* Pequeña flecha apuntando hacia abajo */}
+                      <div className="absolute -bottom-2 left-8 w-4 h-4 bg-white dark:bg-slate-900 border-b border-r border-slate-200 dark:border-white/10 rotate-45"></div>
+                      
+                      <div className="relative z-10">
+                        <p className="text-[9px] font-black uppercase tracking-wider mb-2 opacity-50">Seguridad requerida:</p>
+                        <div className="grid grid-cols-1 gap-1.5">
+                            <RequirementItem met={passRequirements.length} text="Mínimo 8 caracteres" />
+                            <RequirementItem met={passRequirements.upper} text="Una Mayúscula (A-Z)" />
+                            <RequirementItem met={passRequirements.lower} text="Una Minúscula (a-z)" />
+                            <RequirementItem met={passRequirements.number} text="Un Número (0-9)" />
+                            <RequirementItem met={passRequirements.special} text="Un Carácter Especial (!@#$)" />
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
                 <div className="relative">
-                  <input type={showPassword ? "text" : "password"} name="password" value={formData.password} onChange={handleChange} className={`${inputClass("password")} pr-12`} required />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors">{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
-                </div>
-                <div className="mt-4 p-4 bg-slate-100 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/5">
-                    <p className="text-[9px] font-black uppercase tracking-wider mb-2 opacity-50">Seguridad requerida:</p>
-                    <div className="grid grid-cols-1 gap-1.5">
-                        <RequirementItem met={passRequirements.length} text="Mínimo 8 caracteres" />
-                        <RequirementItem met={passRequirements.upper} text="Una Mayúscula (A-Z)" />
-                        <RequirementItem met={passRequirements.lower} text="Una Minúscula (a-z)" />
-                        <RequirementItem met={passRequirements.number} text="Un Número (0-9)" />
-                        <RequirementItem met={passRequirements.special} text="Un Carácter Especial (!@#$)" />
-                    </div>
+                  <input 
+                    type={showPassword ? "text" : "password"} 
+                    name="password" 
+                    value={formData.password} 
+                    onChange={handleChange} 
+                    onFocus={() => setIsPasswordFocused(true)}
+                    onBlur={() => setIsPasswordFocused(false)}
+                    className={`${inputClass("password")} pr-12`} 
+                    required 
+                  />
+                  <button 
+                    type="button" 
+                    onClick={() => setShowPassword(!showPassword)} 
+                    onMouseDown={(e) => e.preventDefault()} // <-- ESTO EVITA QUE SE PIERDA EL FOCO AL HACER CLIC
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
                 </div>
               </div>
+
+              {/* CONFIRMAR CONTRASEÑA */}
               <div className="md:col-span-1">
                 <label className="text-[10px] font-black mb-1.5 block ml-1 uppercase opacity-60">Confirmar Contraseña</label>
                 <div className="relative">
@@ -170,6 +227,7 @@ export default function Register() {
                 {fieldErrors.confirmPassword && <p className="text-[10px] text-red-500 font-bold mt-1 ml-2 italic">{fieldErrors.confirmPassword}</p>}
               </div>
             </div>
+            
             <div className="flex flex-col items-center gap-5 mt-8">
               <button type="submit" disabled={isLoading} className="w-full max-w-xs bg-primary hover:bg-[#7112b3] text-white font-black py-4 rounded-2xl shadow-xl shadow-primary/30 transition-all active:scale-95 disabled:opacity-50 uppercase tracking-widest text-sm">
                 {isLoading ? "Creando cuenta..." : "Registrarse ahora"}
