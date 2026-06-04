@@ -47,3 +47,32 @@ export async function updateUsuarioController(req: NextRequest, params: { cedula
     return NextResponse.json({ ok: false, message: error.message }, { status });
   }
 }
+
+// ==========================================
+// CONTROLADOR PARA EL PERFIL PROPIO (/me)
+// ==========================================
+export async function updateMeController(req: NextRequest) {
+  try {
+    const session = await getSessionUser();
+    if (!session) {
+      return NextResponse.json({ ok: false, message: "No autorizado" }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const parsed = updateUsuarioSchema.safeParse(body);
+    
+    if (!parsed.success) {
+      return NextResponse.json(
+        { ok: false, message: "Datos inválidos", errors: parsed.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const usuarioActualizado = await actualizarUsuario(session, session.cedula, parsed.data);
+    
+    return NextResponse.json({ ok: true, message: "Tus datos han sido actualizados", data: usuarioActualizado }, { status: 200 });
+
+  } catch (error: any) {
+    return NextResponse.json({ ok: false, message: error.message }, { status: 400 });
+  }
+}
