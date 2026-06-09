@@ -97,7 +97,11 @@ export default function Register() {
         contrasena: formData.password
       };
 
-      const response = await fetch("/api/auth/registro", {
+      // 1. Obtenemos la URL base de las variables de entorno
+      const baseURL = process.env.NEXT_PUBLIC_API_URL || "";
+
+      // 2. Usamos la URL base dinámica para enviar los datos de registro
+      const response = await fetch(`${baseURL}api/auth/registro`, {
         method: "POST", 
         headers: { "Content-Type": "application/json" }, 
         body: JSON.stringify(dataToSend)
@@ -107,6 +111,7 @@ export default function Register() {
       
       if (!response.ok) {
         alert(data.message || "Error al registrar usuario");
+        setIsLoading(false);
         return;
       }
       

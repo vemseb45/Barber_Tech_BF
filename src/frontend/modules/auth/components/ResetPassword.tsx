@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, AlertCircle, CheckCircle2, Lock, KeyRound } from "lucide-react";
-import api from "@/app/api/axios";
 
 export default function ResetPassword() {
   const params = useParams();
@@ -37,15 +36,34 @@ export default function ResetPassword() {
     setError("");
     setSuccessMsg("");
     try {
-      await api.post("/api/auth/recovery/reset", {
-        token: token,
-        newPassword: password
+      // 1. Obtenemos la URL base de las variables de entorno
+      const baseURL = process.env.NEXT_PUBLIC_API_URL || "";
+
+      // 2. Ejecutamos fetch nativo
+      const response = await fetch(`${baseURL}api/auth/recovery/reset`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          token: token,
+          newPassword: password
+        })
       });
 
+      // 3. Evaluamos si hay un error en la respuesta
+      if (!response.ok) {
+        // Intentamos leer el JSON de error que manda tu API
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "El enlace es inválido o ha expirado.");
+      }
+
+      // Si todo sale bien, mostramos el éxito
       setSuccessMsg("¡Contraseña actualizada con éxito! Redirigiendo...");
       setTimeout(() => { router.push('/login'); }, 2500);
     } catch (err: any) {
-      setError(err.response?.data?.error || "El enlace es inválido o ha expirado.");
+      // 4. Capturamos y mostramos el error
+      setError(err.message || "Error de conexión con el servidor.");
     } finally {
       setIsLoading(false);
     }

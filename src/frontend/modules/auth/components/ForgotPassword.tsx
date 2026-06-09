@@ -3,7 +3,6 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, AlertCircle, Mail, Hammer, CheckCircle2 } from "lucide-react";
-import api from "@/app/api/axios";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState<string>("");
@@ -31,14 +30,35 @@ export default function ForgotPassword() {
     setIsLoading(true);
     setError("");
     setSuccessMsg("");
+    
     try {
-      // Aquí agregamos { email } para que el backend sepa a quién buscar
-      const res = await api.post('/api/auth/recovery/request', { email });
+      // 1. Obtenemos la URL base de las variables de entorno
+      const baseURL = process.env.NEXT_PUBLIC_API_URL || "";
 
-      setSuccessMsg(res.data.message || 'Si el correo está registrado, te enviaremos las instrucciones.');
+      // 2. Usamos fetch nativo
+      const response = await fetch(`${baseURL}api/auth/recovery/request`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        // Aquí agregamos { email } para que el backend sepa a quién buscar
+        body: JSON.stringify({ email })
+      });
+
+      // 3. Extraemos la respuesta JSON
+      const data = await response.json().catch(() => ({}));
+
+      // 4. Manejamos los errores según el estado de la respuesta
+      if (!response.ok) {
+        throw new Error(data.error || 'Hubo un error al procesar tu solicitud.');
+      }
+
+      // Si todo fue bien, mostramos el mensaje de éxito
+      setSuccessMsg(data.message || 'Si el correo está registrado, te enviaremos las instrucciones.');
       setEmail("");
+      
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Hubo un error al procesar tu solicitud.');
+      setError(err.message || 'Hubo un error al procesar tu solicitud.');
     } finally {
       setIsLoading(false);
     }

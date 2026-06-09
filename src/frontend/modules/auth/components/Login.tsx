@@ -45,10 +45,15 @@ export default function Login() {
     setIsLoading(true); 
 
     try {
-      // 1. Ajustamos las claves para que coincidan con tu backend: email y contrasena
-      const response = await fetch("/api/auth/login", {
+      // 1. Obtenemos la URL base de las variables de entorno
+      const baseURL = process.env.NEXT_PUBLIC_API_URL || "";
+      
+      // 2. Usamos fetch nativo directamente
+      const response = await fetch(`${baseURL}api/auth/login`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json" 
+        },
         body: JSON.stringify({ 
           email: email, 
           contrasena: password 
@@ -57,12 +62,14 @@ export default function Login() {
 
       const data = await response.json();
 
+      // 3. Manejo de error si las credenciales son incorrectas
       if (!response.ok) {
         setError(data.message || "Error al iniciar sesión");
         setIsLoading(false);
         return;
       }
 
+      // 4. Si todo sale bien, guardamos el token y los datos
       if (data.data?.token) localStorage.setItem('token', data.data.token);
 
       if (rememberMe) {
@@ -131,7 +138,6 @@ export default function Login() {
 
             <div className="space-y-5 text-left mt-8">
               <div>
-                {/* 2. Cambiamos visualmente a Correo para que tenga sentido con tu API */}
                 <label className="text-xs font-bold mb-2 block ml-1 opacity-70">Correo</label>
                 <input type="email" placeholder="ejemplo@gmail.com" className="w-full p-4 rounded-2xl bg-slate-100 dark:bg-white/5 border border-transparent focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all text-sm font-medium" value={email} onChange={(e) => setEmail(e.target.value)} required />
               </div>
