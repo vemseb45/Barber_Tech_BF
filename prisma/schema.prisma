@@ -74,25 +74,6 @@ model Barberia {
   @@map("tb_barberias")
 }
 
-
-
-
-/// ======================================================
-/// TABLA ESPECIALIDAD
-/// ======================================================
-
-model Especialidad {
-  id_especialidad Int    @id @default(autoincrement())
-  nombre          String @unique @db.VarChar(100)
-
-  // Relaciones
-  barberos  BarberoDetalle[]
-  servicios Servicio[]
-
-  @@index([nombre])
-  @@map("tb_especialidades")
-}
-
 /// ======================================================
 /// TABLA USUARIOS
 /// ======================================================
@@ -135,15 +116,12 @@ model Usuario {
 model BarberoDetalle {
   cedula          String @id @db.VarChar(11)
   id_barberia     Int
-  id_especialidad Int?
 
   // Relaciones
   usuario      Usuario       @relation(fields: [cedula], references: [cedula], onDelete: Cascade)
   barberia     Barberia      @relation(fields: [id_barberia], references: [id_barberia], onDelete: Cascade)
-  especialidad Especialidad? @relation(fields: [id_especialidad], references: [id_especialidad])
 
   @@index([id_barberia])
-  @@index([id_especialidad])
   @@map("tb_barbero_detalle")
 }
 /// ======================================================
@@ -158,15 +136,12 @@ model Servicio {
   duracion_minutos Int
   imagen           String? @db.VarChar(255) // Añadido desde tu modelo de Django
   id_barberia      Int?
-  id_especialidad  Int?
 
   // Relaciones
   barberia     Barberia?     @relation(fields: [id_barberia], references: [id_barberia])
-  especialidad Especialidad? @relation(fields: [id_especialidad], references: [id_especialidad])
   citas        Cita[]
 
   @@index([id_barberia])
-  @@index([id_especialidad])
   @@index([nombre])
   @@map("tb_servicios")
 }
