@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import AdminLayout from '@/frontend/modules/admin/AdminLayout';
+import AdminLayout from '@/frontend/layouts/AdminLayout';
 
 export default function DashboardPage() {
   const router = useRouter();

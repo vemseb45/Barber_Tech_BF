@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from 'react';
-import Sidebar from '@/frontend/modules/admin/components/sidebar'; // Asegúrate de que la ruta sea correcta
-import type { AdminView } from '@/frontend/modules/admin/components/types';
+import Sidebar from '@/frontend/components/sidebar/sidebar_admin'; // Asegúrate de que la ruta sea correcta
+import type { AdminView } from '@/frontend/types/types_admin';
 
 // Importamos las vistas
 import ViewInicio from '@/frontend/modules/admin/components/ViewInicio';

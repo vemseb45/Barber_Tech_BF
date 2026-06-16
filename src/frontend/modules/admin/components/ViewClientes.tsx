@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { UserPlus, Search, User, MoreVertical, Shield } from 'lucide-react';
-import type { Usuario } from '@/frontend/modules/admin/components/types';
+import type { Usuario } from '@/frontend/types/types_admin';
 
 const ViewClientes: React.FC = () => {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);

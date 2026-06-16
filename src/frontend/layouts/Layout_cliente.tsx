@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { Bell, Moon, Sun, Search, Menu } from 'lucide-react';
-import SidebarCliente from '@/frontend/modules/cliente/components/SidebarCliente';
+import SidebarCliente from '@/frontend/components/sidebar/SidebarCliente';
 
 interface ClienteLayoutProps {
   children: React.ReactNode;

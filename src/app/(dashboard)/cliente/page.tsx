@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 // IMPORTACIÓN DEL LAYOUT Y COMPONENTES
-import ClienteLayout from "@/frontend/modules/cliente/Layout";
+import ClienteLayout from "@/frontend/layouts/Layout_cliente";
 import ViewInicioCliente from "@/frontend/modules/cliente/components/ViewInicio"; 
 import ViewAgenda from "@/frontend/modules/cliente/components/ViewAgenda";
 import ViewPendientes from "@/frontend/modules/cliente/components/ViewPendientes";

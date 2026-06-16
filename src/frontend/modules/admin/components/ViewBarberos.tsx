@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { UserPlus, Search, Scissors, Calendar, Trash2, MoreVertical } from 'lucide-react';
-import type { Usuario } from '@/frontend/modules/admin/components/types';
+import type { Usuario } from '@/frontend/types/types_admin';
 import ModalAsignarHorario from '@/frontend/modules/admin/components/ModalAsignarHorario';
 import CargaMasivaHorarios from '@/frontend/modules/admin/components/CargaMasivaHorarios';
 import CrearBarbero from '@/frontend/modules/admin/components/CrearBarbero';

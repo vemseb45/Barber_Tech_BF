@@ -7,7 +7,7 @@ import {
   LogOut, ChevronRight, ChevronDown,
   UserRound, UserCog
 } from 'lucide-react';
-import type { AdminView } from '@/frontend/modules/admin/components/types';
+import type { AdminView } from '@/frontend/types/types_admin';
 
 interface SidebarProps {
   activeView: AdminView;
