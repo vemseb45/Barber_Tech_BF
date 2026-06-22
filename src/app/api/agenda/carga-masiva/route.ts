@@ -1,4 +1,4 @@
-import { AgendaController } from '@/src/controllers/agenda.controller';
+import { AgendaController } from '@/backend/modules/agenda/agenda.controller';
 
 const controller = new AgendaController();
 

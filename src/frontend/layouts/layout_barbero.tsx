@@ -11,12 +11,9 @@ interface BarberoLayoutProps {
 }
 
 const BarberoLayout: React.FC<BarberoLayoutProps> = ({ children, activeView, onViewChange }) => {
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('theme') !== 'light';
-    }
-    return true;
-  });
+  // CORREGIDO: Inicializamos siempre en true (dark) de forma estática para que coincida con el servidor
+  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [mounted, setMounted] = useState(false); // Para evitar pestañeos de hidratación
 
   const toggleTheme = () => {
     const newMode = !isDarkMode;
@@ -30,14 +27,16 @@ const BarberoLayout: React.FC<BarberoLayoutProps> = ({ children, activeView, onV
     }
   };
 
+  // CORREGIDO: Evaluamos el localStorage una vez que el componente ya hidrató en el navegador
   useEffect(() => {
+    setMounted(true); // Ya estamos en el navegador
     const savedTheme = localStorage.getItem('theme');
-    if (savedTheme !== 'light') {
-      document.documentElement.classList.add('dark');
-      setIsDarkMode(true);
-    } else {
+    if (savedTheme === 'light') {
       document.documentElement.classList.remove('dark');
       setIsDarkMode(false);
+    } else {
+      document.documentElement.classList.add('dark');
+      setIsDarkMode(true);
     }
   }, []);
 
@@ -88,7 +87,8 @@ const BarberoLayout: React.FC<BarberoLayoutProps> = ({ children, activeView, onV
               title="Alternar modo visual"
               aria-label="Cambiar Tema"
             >
-              {isDarkMode ? <Sun size={20} fill="currentColor" /> : <Moon size={20} fill="currentColor" />}
+              {/* Para evitar disparidad de iconos entre servidor y cliente */}
+              {mounted ? (isDarkMode ? <Sun size={20} fill="currentColor" /> : <Moon size={20} fill="currentColor" />) : <Sun size={20} fill="currentColor" />}
             </button>
 
             <button className="relative p-2.5 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/10 transition-all text-slate-600 dark:text-slate-400 cursor-pointer shadow-sm">

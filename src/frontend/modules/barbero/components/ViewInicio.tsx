@@ -84,7 +84,7 @@ export default function ViewInicio({ onViewChange }: ViewInicioProps) {
         const fechaFin = futura.toISOString().split("T")[0]; // Hasta en 7 días
 
         const res = await fetch(
-          `http://127.0.0.1:8000/api/agenda/miAgenda/?barberoId=${miIdBarbero}&fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`
+          `/api/agenda/miAgenda/`
         );
         const data = await res.json();
         const lista = data.data || [];

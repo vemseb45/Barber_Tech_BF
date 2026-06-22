@@ -33,7 +33,7 @@ export default function ViewCanceladas() {
 
   useEffect(() => {
     if (!miIdBarbero) return;
-    fetch(`http://127.0.0.1:8000/api/cita/historial/?barberoId=${miIdBarbero}&estado=CANC`)
+    fetch(`/api/citas/historial`)
       .then(res => res.json())
       .then(response => {
         if (response.success && Array.isArray(response.data)) {

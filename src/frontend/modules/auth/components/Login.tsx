@@ -3,18 +3,25 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sun, Moon, Eye, EyeOff, ArrowLeft, AlertCircle, X } from "lucide-react";
+import { Sun, Moon, Eye, EyeOff, ArrowLeft, AlertCircle, X, CheckCircle } from "lucide-react";
 
 export default function Login() {
+  // Estados originales
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [darkMode, setDarkMode] = useState(true);
   const [error, setError] = useState(""); 
+  const [successMsg, setSuccessMsg] = useState(""); 
   const [isLoading, setIsLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
   
+  // NUEVOS ESTADOS PARA 2FA
+  const [show2FAForm, setShow2FAForm] = useState(false);
+  const [twoFactorCode, setTwoFactorCode] = useState("");
+  const [preAuthToken, setPreAuthToken] = useState("");
+
   const router = useRouter();
 
   useEffect(() => {
@@ -39,60 +46,118 @@ export default function Login() {
 
   const toggleTheme = () => setDarkMode(!darkMode);
 
+  // Función común para guardar los datos y redirigir (Para no repetir código)
+  const procesarLoginExitoso = (data: any) => {
+    const tokenRecibido = data.token || data.data?.token || data.access_token;
+    
+    if (tokenRecibido) {
+      localStorage.setItem('token', tokenRecibido);
+      console.log("✅ Token guardado en localStorage correctamente.");
+    } else {
+      setError("Error: El servidor no envió el token de acceso final.");
+      return;
+    }
+
+    if (rememberMe && !show2FAForm) {
+      localStorage.setItem('remember_email', email);
+      localStorage.setItem('remember_password', password);
+    } else if (!rememberMe && !show2FAForm) {
+      localStorage.removeItem('remember_email');
+      localStorage.removeItem('remember_password');
+    }
+
+    const username = data.user?.username || data.data?.user?.username || data.data?.user?.nombres || "Usuario";
+    localStorage.setItem('username', username);
+
+    const rawRole = data.user?.rol || data.data?.user?.rol || data.data?.rol || data.rol || "";
+    const userRole = rawRole.toString().toLowerCase().trim();
+
+    if (userRole === "admin") router.push("/admin");
+    else if (userRole === "barbero") router.push("/barbero");
+    else router.push("/cliente");
+  };
+
+  // PASO 1: Enviar credenciales
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setSuccessMsg("");
     setIsLoading(true); 
 
     try {
-      // 1. Obtenemos la URL base de las variables de entorno
       const baseURL = process.env.NEXT_PUBLIC_API_URL || "";
-      
-      // 2. Usamos fetch nativo directamente
       const response = await fetch(`${baseURL}api/auth/login`, {
         method: "POST",
-        headers: { 
-          "Content-Type": "application/json" 
-        },
-        body: JSON.stringify({ 
-          email: email, 
-          contrasena: password 
-        })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, contrasena: password })
       });
 
       const data = await response.json();
 
-      // 3. Manejo de error si las credenciales son incorrectas
       if (!response.ok) {
         setError(data.message || "Error al iniciar sesión");
         setIsLoading(false);
         return;
       }
 
-      // 4. Si todo sale bien, guardamos el token y los datos
-      if (data.data?.token) localStorage.setItem('token', data.data.token);
-
-      if (rememberMe) {
-        localStorage.setItem('remember_email', email);
-        localStorage.setItem('remember_password', password);
-      } else {
-        localStorage.removeItem('remember_email');
-        localStorage.removeItem('remember_password');
+      // NUEVA LÓGICA: Detectar si pide código 2FA
+      if (data.requires2FA) {
+        console.log("🔒 Autenticación de 2 pasos requerida.");
+        setPreAuthToken(data.preAuthToken);
+        setShow2FAForm(true);
+        setSuccessMsg(data.message || "Código enviado a tu correo");
+        setIsLoading(false);
+        return; 
       }
 
-      const username = data.data?.user?.username || data.data?.user?.nombres || "Usuario";
-      localStorage.setItem('username', username);
-
-      const rawRole = data.data?.user?.rol || data.data?.rol || "";
-      const userRole = rawRole.toString().toLowerCase().trim();
-
-      if (userRole === "admin") router.push("/dashboardAdmin");
-      else if (userRole === "barbero") router.push("/dashboardBarbero");
-      else router.push("/cliente");
+      // Si no pide 2FA, procesamos normal
+      procesarLoginExitoso(data);
 
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Error en petición:", error);
       setError("No se pudo conectar con el servidor.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // PASO 2: Enviar el código de verificación
+ const handleVerify2FA = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSuccessMsg("");
+    setIsLoading(true);
+
+    try {
+      const baseURL = process.env.NEXT_PUBLIC_API_URL || "";
+      
+      // CORRECCIÓN 1: La ruta exacta que espera tu backend
+      const response = await fetch(`${baseURL}api/auth/2fa/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+            preAuthToken: preAuthToken, 
+            // CORRECCIÓN 2: El backend espera "code", no "codigo"
+            code: twoFactorCode 
+        })
+      });
+
+      const data = await response.json();
+
+      console.log("🔍 Respuesta exacta del servidor 2FA:", data);
+
+      if (!response.ok) {
+        setError(data.message || "Código de seguridad incorrecto.");
+        setIsLoading(false);
+        return;
+      }
+
+      // Si el código es correcto, nos debe enviar el token definitivo
+      procesarLoginExitoso(data);
+
+    } catch (error) {
+      console.error("Error en petición 2FA:", error);
+      setError("No se pudo conectar con el servidor para verificar el código.");
     } finally {
       setIsLoading(false);
     }
@@ -103,6 +168,7 @@ export default function Login() {
   return (
     <div className="min-h-screen flex flex-col px-4 sm:px-6 md:px-10 transition-colors duration-500 bg-slate-50 dark:bg-[#0a0a0f] text-slate-900 dark:text-slate-100 font-sans antialiased overflow-x-hidden">
       <header className="flex justify-between items-center py-4 sm:py-6 max-w-7xl mx-auto w-full">
+        {/* Header se mantiene igual */}
         <div className="flex items-center gap-2 shrink-0">
           <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary text-white rounded-xl flex items-center justify-center font-black shadow-lg shadow-primary/30 text-lg shrink-0">B</div>
           <h1 className="text-sm sm:text-lg font-black tracking-tighter uppercase leading-tight">Barber<span className="text-primary">Tech</span></h1>
@@ -111,16 +177,18 @@ export default function Login() {
           <button onClick={toggleTheme} className="p-2 sm:p-2.5 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-yellow-400 shadow-sm">
             {darkMode ? <Sun size={18} fill="currentColor" /> : <Moon size={18} fill="currentColor" />}
           </button>
-          <Link href="/" className="flex items-center gap-1 bg-primary hover:bg-[#7112b3] px-4 py-2 rounded-full text-white font-bold text-[10px] sm:text-xs shadow-md shadow-primary/30 transition-all">
+          <button onClick={() => show2FAForm ? setShow2FAForm(false) : router.push("/")} className="flex items-center gap-1 bg-primary hover:bg-[#7112b3] px-4 py-2 rounded-full text-white font-bold text-[10px] sm:text-xs shadow-md shadow-primary/30 transition-all">
             <ArrowLeft size={14} /> <span className="hidden sm:inline">Volver</span>
-          </Link>
+          </button>
         </div>
       </header>
 
       <main className="flex-grow flex justify-center items-center py-8">
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md">
-          <form onSubmit={handleSubmit} className="w-full text-center p-6 sm:p-10 rounded-[32px] bg-white dark:bg-white/5 border border-black/5 dark:border-white/10 shadow-2xl backdrop-blur-sm">
-            <span className="text-primary text-[10px] font-black tracking-[2px] uppercase mb-3 block">Bienvenido de nuevo</span>
+          <form onSubmit={show2FAForm ? handleVerify2FA : handleSubmit} className="w-full text-center p-6 sm:p-10 rounded-[32px] bg-white dark:bg-white/5 border border-black/5 dark:border-white/10 shadow-2xl backdrop-blur-sm">
+            <span className="text-primary text-[10px] font-black tracking-[2px] uppercase mb-3 block">
+              {show2FAForm ? "Paso de seguridad" : "Bienvenido de nuevo"}
+            </span>
             <h2 className="text-4xl sm:text-5xl font-black leading-none mb-4 tracking-tight">Barber <span className="text-primary">Tech</span></h2>
             
             <AnimatePresence>
@@ -128,45 +196,81 @@ export default function Login() {
                 <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-start gap-3 text-left relative">
                   <div className="bg-red-500/20 p-1.5 rounded-lg shrink-0"><AlertCircle size={16} className="text-red-500" /></div>
                   <div className="flex-1 pr-6">
-                    <p className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-0.5">No pudo ingresar</p>
+                    <p className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-0.5">Error</p>
                     <p className="text-slate-600 dark:text-slate-300 text-[11px] font-medium leading-tight">{error}</p>
                   </div>
                   <button type="button" onClick={() => setError("")} className="absolute top-4 right-4 text-slate-400 hover:text-red-500 transition-colors"><X size={14} /></button>
                 </motion.div>
               )}
+              {successMsg && (
+                <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} className="mb-6 p-4 bg-green-500/10 border border-green-500/20 rounded-2xl flex items-start gap-3 text-left relative">
+                  <div className="bg-green-500/20 p-1.5 rounded-lg shrink-0"><CheckCircle size={16} className="text-green-500" /></div>
+                  <div className="flex-1 pr-6">
+                    <p className="text-[10px] font-black text-green-500 uppercase tracking-widest mb-0.5">Éxito</p>
+                    <p className="text-slate-600 dark:text-slate-300 text-[11px] font-medium leading-tight">{successMsg}</p>
+                  </div>
+                  <button type="button" onClick={() => setSuccessMsg("")} className="absolute top-4 right-4 text-slate-400 hover:text-green-500 transition-colors"><X size={14} /></button>
+                </motion.div>
+              )}
             </AnimatePresence>
 
             <div className="space-y-5 text-left mt-8">
-              <div>
-                <label className="text-xs font-bold mb-2 block ml-1 opacity-70">Correo</label>
-                <input type="email" placeholder="ejemplo@gmail.com" className="w-full p-4 rounded-2xl bg-slate-100 dark:bg-white/5 border border-transparent focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all text-sm font-medium" value={email} onChange={(e) => setEmail(e.target.value)} required />
-              </div>
-              <div>
-                <label className="text-xs font-bold mb-2 block ml-1 opacity-70">Contraseña</label>
-                <div className="relative group">
-                  <input type={showPassword ? "text" : "password"} placeholder="••••••••" className="w-full p-4 pr-12 rounded-2xl bg-slate-100 dark:bg-white/5 border border-transparent focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all text-sm font-medium" value={password} onChange={(e) => setPassword(e.target.value)} required />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors focus:outline-none">{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
-                </div>
-              </div>
-              <div className="flex items-center justify-between mt-2 px-1">
-                <label className="flex items-center gap-2 cursor-pointer group">
-                  <div className="relative flex items-center justify-center">
-                    <input type="checkbox" className="peer sr-only" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />
-                    <div className="w-5 h-5 rounded-md border-2 border-slate-300 dark:border-white/20 peer-checked:bg-primary peer-checked:border-primary flex items-center justify-center transition-colors">
-                      <svg className={`w-3 h-3 text-white transition-opacity ${rememberMe ? 'opacity-100' : 'opacity-0'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+              {!show2FAForm ? (
+                // FORMULARIO NORMAL: CORREO Y CONTRASEÑA
+                <>
+                  <div>
+                    <label className="text-xs font-bold mb-2 block ml-1 opacity-70">Correo</label>
+                    <input type="email" placeholder="ejemplo@gmail.com" className="w-full p-4 rounded-2xl bg-slate-100 dark:bg-white/5 border border-transparent focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all text-sm font-medium" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold mb-2 block ml-1 opacity-70">Contraseña</label>
+                    <div className="relative group">
+                      <input type={showPassword ? "text" : "password"} placeholder="••••••••" className="w-full p-4 pr-12 rounded-2xl bg-slate-100 dark:bg-white/5 border border-transparent focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all text-sm font-medium" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors focus:outline-none">{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
                     </div>
                   </div>
-                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400 group-hover:text-primary transition-colors">Recordar contraseña</span>
-                </label>
-                <Link href="/recovery" className="text-xs font-bold text-primary hover:underline transition-colors focus:outline-none">¿Olvidaste tu contraseña?</Link>
-              </div>
+                  <div className="flex items-center justify-between mt-2 px-1">
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                      <div className="relative flex items-center justify-center">
+                        <input type="checkbox" className="peer sr-only" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />
+                        <div className="w-5 h-5 rounded-md border-2 border-slate-300 dark:border-white/20 peer-checked:bg-primary peer-checked:border-primary flex items-center justify-center transition-colors">
+                          <svg className={`w-3 h-3 text-white transition-opacity ${rememberMe ? 'opacity-100' : 'opacity-0'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                        </div>
+                      </div>
+                      <span className="text-xs font-bold text-slate-500 dark:text-slate-400 group-hover:text-primary transition-colors">Recordar contraseña</span>
+                    </label>
+                    <Link href="/recovery" className="text-xs font-bold text-primary hover:underline transition-colors focus:outline-none">¿Olvidaste tu contraseña?</Link>
+                  </div>
+                </>
+              ) : (
+                // NUEVO FORMULARIO: CÓDIGO DE SEGURIDAD 2FA
+                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+                  <label className="text-xs font-bold mb-2 block ml-1 opacity-70">Ingresa el código enviado a tu correo</label>
+                  <input 
+                    type="text" 
+                    placeholder="Ej. 123456" 
+                    className="w-full p-4 rounded-2xl bg-slate-100 dark:bg-white/5 border border-transparent focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all text-center text-2xl font-black tracking-widest" 
+                    value={twoFactorCode} 
+                    onChange={(e) => setTwoFactorCode(e.target.value)} 
+                    required 
+                    maxLength={6}
+                    autoComplete="off"
+                  />
+                  <p className="mt-3 text-[11px] text-center text-slate-500">
+                    Revisa tu bandeja de entrada o carpeta de spam.
+                  </p>
+                </motion.div>
+              )}
             </div>
 
             <div className="mt-10">
               <button type="submit" disabled={isLoading} className="w-full bg-primary hover:bg-[#7112b3] text-white font-black py-4 rounded-2xl shadow-xl shadow-primary/30 transition-all active:scale-95 cursor-pointer uppercase tracking-widest text-sm disabled:opacity-50 disabled:cursor-not-allowed">
-                {isLoading ? "Conectando..." : "Ingresar"}
+                {isLoading ? "Conectando..." : (show2FAForm ? "Verificar Código" : "Ingresar")}
               </button>
-              <p className="mt-6 text-xs text-slate-500 dark:text-slate-400 font-medium">¿No tienes cuenta? <Link href="/registro" className="text-primary font-bold hover:underline">Registrarse gratis</Link></p>
+              
+              {!show2FAForm && (
+                <p className="mt-6 text-xs text-slate-500 dark:text-slate-400 font-medium">¿No tienes cuenta? <Link href="/registro" className="text-primary font-bold hover:underline">Registrarse gratis</Link></p>
+              )}
             </div>
           </form>
         </motion.div>

@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from 'react';
-import Sidebar from '@/frontend/components/sidebar/sidebar_admin'; // Asegúrate de que la ruta sea correcta
+import Sidebar from '@/frontend/components/sidebar/sidebar_admin'; 
 import type { AdminView } from '@/frontend/types/types_admin';
 
 // Importamos las vistas
@@ -8,6 +8,7 @@ import ViewInicio from '@/frontend/modules/admin/components/ViewInicio';
 import ViewClientes from '@/frontend/modules/admin/components/ViewClientes';
 import ViewBarberos from '@/frontend/modules/admin/components/ViewBarberos';
 import ViewBarberias from '@/frontend/modules/admin/components/viewBarberias';
+import ViewServicios from '@/frontend/modules/admin/components/ViewServicios';
 
 export default function AdminLayout() {
   const [activeView, setActiveView] = useState<AdminView>('Inicio');
@@ -18,6 +19,7 @@ export default function AdminLayout() {
       case 'Clientes': return <ViewClientes />;
       case 'Barberos': return <ViewBarberos />;
       case 'Barberías': return <ViewBarberias />;
+      case 'Servicios': return <ViewServicios/>;
       default: return <ViewInicio />;
     }
   };

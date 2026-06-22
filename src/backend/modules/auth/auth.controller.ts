@@ -43,7 +43,12 @@ export async function loginController(req: NextRequest) {
 
     const successResult = result as LoginSuccess;
 
-    const response = NextResponse.json({ ok: true, user: successResult.user }, { status: 200 });
+    const response = NextResponse.json({
+      ok: true,
+      user: successResult.user,
+      token: successResult.token
+    }, { status: 200 });
+
     await setSessionCookie(successResult.token);
     return response;
   } catch (error) {
@@ -74,10 +79,19 @@ export async function verify2faController(req: NextRequest) {
     }
 
     const successResult = result as LoginSuccess;
-    const response = NextResponse.json({ ok: true, user: successResult.user }, { status: 200 });
-    
+
+    // ANTES ESTABA ASÍ:
+    // const response = NextResponse.json({ ok: true, user: successResult.user }, { status: 200 });
+
+    // CÁMBIALO A ESTO:
+    const response = NextResponse.json({
+      ok: true,
+      user: successResult.user,
+      token: successResult.token // <-- FALTABA ESTO TAMBIÉN
+    }, { status: 200 });
+
     await setSessionCookie(successResult.token);
-    
+
     return response;
   } catch (error) {
     console.error("verify2faController error:", error);

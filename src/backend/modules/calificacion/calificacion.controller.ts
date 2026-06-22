@@ -1,11 +1,18 @@
 import { NextRequest } from "next/server";
 import { apiResponse } from "@/backend/shared/utils/apiResponse";
+import { getSessionUser } from "@/backend/shared/get-session-user";
 import { CalificacionService } from "./calificacion.service";
 import { crearCalificacionSchema } from "./validators/calificacion.validator";
 
 export class CalificacionController {
   static async crearCalificacion(req: NextRequest) {
     try {
+      const session = await getSessionUser();
+      if (!session) return apiResponse(false, "No autenticado", null, 401);
+      if (session.rol !== "Cliente") {
+        return apiResponse(false, "Solo los clientes pueden calificar una cita.", null, 403);
+      }
+
       const body = await req.json();
 
       const validacion = crearCalificacionSchema.safeParse(body);

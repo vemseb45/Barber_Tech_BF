@@ -4,13 +4,14 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { jwtDecode } from 'jwt-decode';
 import { CalendarDays } from "lucide-react";
-
-// Importación corregida a su misma carpeta
 import Calendario from "@/frontend/modules/cliente/components/Calendario"; 
 import type { Bloque } from "@/frontend/modules/cliente/components/Calendario";
 
 interface JwtPayload {
-  user_id: string;
+  user_id?: string;
+  sub?: string;
+  id?: string;
+  exp?: number;
 }
 
 interface Barbero {
@@ -39,35 +40,82 @@ export default function AgendaCitasCliente() {
 
   const router = useRouter();
 
-  // 1. Decodificar JWT al cargar
+  // 1 y 2. Verificar Autenticación y Cargar Datos Iniciales (Mejorado)
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) { router.push("/login"); return; }
-    try {
-      const decoded = jwtDecode<JwtPayload>(token);
-      if (decoded.user_id) setCedulaCliente(Number(decoded.user_id));
-    } catch (err) { router.push("/login"); }
-  }, [router]);
+    const inicializarModulo = async () => {
+      const token = localStorage.getItem("token");
 
-  // 2. Cargar datos iniciales (Barberos y Servicios)
-  useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/usuarios/barberos/")
-      .then(res => res.json())
-      .then(response => {
-        if (response.success && Array.isArray(response.data)) setBarberos(response.data);
-      }).catch(err => console.error("Error barberos:", err));
+      // Validar si no hay token o si se guardó mal como texto
+      if (!token || token === "undefined" || token === "null") { 
+        console.warn("No hay un token válido, redirigiendo a login...");
+        router.push("/login"); 
+        return; 
+      }
 
-    const token = localStorage.getItem("token");
-    fetch("http://127.0.0.1:8000/api/servicios/", {
-      headers: { "Authorization": `Bearer ${token}` }
-    })
-      .then(res => res.json())
-      .then(response => {
-        if (response.success && Array.isArray(response.data)) {
-          setServicios(response.data);
+      try {
+        // Validar el JWT
+        const decoded = jwtDecode<JwtPayload>(token);
+        console.log("Token decodificado correctamente:", decoded);
+        
+        // Verificar si el token ya expiró
+        const currentTime = Date.now() / 1000;
+        if (decoded.exp && decoded.exp < currentTime) {
+            console.warn("El token ha expirado. Redirigiendo a login...");
+            localStorage.removeItem("token");
+            router.push("/login");
+            return;
         }
-      }).catch(err => console.error("Error servicios:", err));
-  }, []);
+
+        // Algunos backends usan user_id, otros sub. Cubrimos ambos:
+        const idCliente = decoded.user_id || decoded.sub || decoded.id;
+        if (idCliente) {
+            setCedulaCliente(Number(idCliente));
+        }
+
+        // Hacemos las peticiones en paralelo
+        const [resBarberos, resServicios] = await Promise.all([
+          fetch("/api/barberos/"),
+          fetch("/api/servicios/", {
+            headers: { "Authorization": `Bearer ${token}` }
+          })
+        ]);
+
+        // Solo te saca si el backend EXPRESAMENTE dice que tu token es inválido
+        if (resServicios.status === 401 || resServicios.status === 403) {
+            console.warn(`Error de autorización (${resServicios.status}). El backend rechazó el token.`);
+            localStorage.removeItem("token");
+            router.push("/login");
+            return;
+        }
+
+        // Intentar leer los Barberos (sin que rompa toda la app si falla)
+        try {
+           const dataBarberos = await resBarberos.json();
+           if (dataBarberos.success && Array.isArray(dataBarberos.data)) {
+               setBarberos(dataBarberos.data);
+           }
+        } catch (e) {
+           console.error("Error leyendo los barberos. El servidor no envió un JSON válido:", e);
+        }
+
+        // Intentar leer los Servicios
+        try {
+           const dataServicios = await resServicios.json();
+           if (dataServicios.success && Array.isArray(dataServicios.data)) {
+               setServicios(dataServicios.data);
+           }
+        } catch (e) {
+           console.error("Error leyendo los servicios. El servidor no envió un JSON válido:", e);
+        }
+
+      } catch (err) {
+        // AHORA: Si hay un error de red o de código, te lo mostrará en consola pero NO te cerrará la sesión.
+        console.error("Error general inicializando el módulo (No serás expulsado):", err);
+      }
+    };
+
+    inicializarModulo();
+  }, [router]);
 
   // 3. Cargar Disponibilidad cuando cambian los requisitos
   useEffect(() => {
@@ -78,9 +126,20 @@ export default function AgendaCitasCliente() {
 
     const fetchDisponibilidad = async () => {
       try {
-        const res = await fetch(
-          `http://127.0.0.1:8000/api/agenda/disponibilidad/?barberoId=${barberoSeleccionado}&fecha=${fechaSeleccionada}&servicioId=${servicioSeleccionado}&_t=${new Date().getTime()}`
-        );
+        const token = localStorage.getItem("token");
+        
+        const params = new URLSearchParams({
+            barbero_id: barberoSeleccionado,
+            fecha: fechaSeleccionada,
+            servicio_id: String(servicioSeleccionado)
+        });
+
+        const res = await fetch(`/api/agenda/disponibilidad?${params.toString()}`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        
+        if (!res.ok) throw new Error("Error en la respuesta del servidor al cargar disponibilidad");
+
         const response = await res.json();
         let bloquesRaw: Bloque[] = response.success ? response.data : (Array.isArray(response) ? response : []);
 
@@ -90,9 +149,11 @@ export default function AgendaCitasCliente() {
         });
         setBloquesDisponibles(filtrados);
       } catch (err) {
+        console.error("Error al consultar disponibilidad:", err);
         setBloquesDisponibles([]);
       }
     };
+    
     fetchDisponibilidad();
   }, [barberoSeleccionado, fechaSeleccionada, servicioSeleccionado]);
 
@@ -114,7 +175,7 @@ export default function AgendaCitasCliente() {
     };
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/cita/reservar/", {
+      const response = await fetch("/api/citas/reservar/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

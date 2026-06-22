@@ -41,7 +41,7 @@ export default function ViewCitas() {
   const handleFinalizar = async (id: number) => {
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/cita/finalizar/${id}/`, {
+      const res = await fetch(`/api/cita/finalizar`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -65,7 +65,7 @@ export default function ViewCitas() {
     }
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/cita/cancelar/${id}/`, {
+      const res = await fetch(`/api/cita/cancelar`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -86,7 +86,7 @@ export default function ViewCitas() {
   useEffect(() => {
     if (!miIdBarbero) return;
     setCargando(true);
-    fetch(`http://127.0.0.1:8000/api/agenda/miAgenda/?barberoId=${miIdBarbero}&fecha=${fechaFiltro}`)
+    fetch(`/api/agenda/miAgenda/`)
       .then(res => res.json())
       .then(response => {
         let citas: Cita[] = [];

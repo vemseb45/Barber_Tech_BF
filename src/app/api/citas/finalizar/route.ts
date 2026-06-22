@@ -6,5 +6,5 @@ const controller = new CitaController();
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
   const citaId = parseInt(resolvedParams.id);
-  return controller.cancelarCita(request, citaId);
+  return controller.finalizarCita(request, citaId);
 }

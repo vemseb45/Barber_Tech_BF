@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; // <-- Agregamos useEffect
 import { 
   Home, 
   CalendarDays, 
@@ -20,7 +20,7 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange }) => {
-  const router = useRouter(); // Usamos useRouter de Next.js
+  const router = useRouter(); 
   
   const [isCitasOpen, setIsCitasOpen] = useState(
     activeView === 'Citas' || 
@@ -29,9 +29,20 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange }) => {
     activeView === ('Canceladas' as any)
   );
 
+  // NUEVO: Estado para el nombre de usuario
+  const [username, setUsername] = useState('Barbero');
+
+  // NUEVO: Leemos el localStorage solo después de que el componente se monta
+  useEffect(() => {
+    const storedUsername = localStorage.getItem('username');
+    if (storedUsername) {
+      setUsername(storedUsername);
+    }
+  }, []);
+
   const handleLogout = () => {
     localStorage.clear();
-    router.push('/login'); // Redirección estilo Next.js
+    router.push('/login'); 
   };
 
   const isCitasActive = 
@@ -40,8 +51,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange }) => {
     activeView === ('Historial' as any) || 
     activeView === ('Canceladas' as any);
 
-  // Verificamos si estamos en el navegador para evitar errores de hidratación
-  const username = typeof window !== 'undefined' ? localStorage.getItem('username') || 'Barbero' : 'Barbero';
+  // Ahora la inicial se calcula del estado, no directamente del localStorage
   const initial = username.charAt(0).toUpperCase();
 
   return (
@@ -62,7 +72,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange }) => {
       <nav className="flex-1 px-4 space-y-1.5 mt-4 overflow-y-auto">
         <p className="px-5 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Menú Principal</p>
         
-        {/* INICIO */}
         <button
           onClick={() => onViewChange('Inicio')}
           className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl transition-all ${
@@ -75,7 +84,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange }) => {
           <span className="font-bold text-sm">Inicio</span>
         </button>
 
-        {/* ACORDEÓN CITAS */}
         <div className="space-y-1">
           <button
             onClick={() => setIsCitasOpen(!isCitasOpen)}
@@ -92,7 +100,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange }) => {
             {isCitasOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
           </button>
 
-          {/* SUBMENÚ */}
           {isCitasOpen && (
             <div className="pl-4 space-y-1">
               <button
@@ -119,7 +126,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange }) => {
                 <span>Servicios Realizados</span>
               </button>
 
-              {/* BOTÓN DE CITAS CANCELADAS */}
               <button
                 onClick={() => onViewChange('Canceladas' as any)}
                 className={`w-full flex items-center gap-4 px-9 py-3 rounded-2xl text-sm font-bold transition-all ${
@@ -135,7 +141,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange }) => {
           )}
         </div>
 
-        {/* AJUSTES */}
         <button
           onClick={() => onViewChange('Ajustes')}
           className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl transition-all ${

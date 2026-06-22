@@ -20,8 +20,8 @@ export default function ViewInicioCliente({ onViewChange }: ViewInicioProps) {
       try {
         const token = localStorage.getItem("token");
         const [pendientesRes, terminadasRes] = await Promise.all([
-          fetch("http://127.0.0.1:8000/api/cita/pendientes/cliente/", { headers: { Authorization: `Bearer ${token}` } }),
-          fetch("http://127.0.0.1:8000/api/cita/terminadas/cliente/", { headers: { Authorization: `Bearer ${token}` } }),
+          fetch("/api/citas/pendientes/cliente/", { headers: { Authorization: `Bearer ${token}` } }),
+          fetch("/api/citas/terminadas/cliente/", { headers: { Authorization: `Bearer ${token}` } }),
         ]);
 
         const pendientesData = await pendientesRes.json();

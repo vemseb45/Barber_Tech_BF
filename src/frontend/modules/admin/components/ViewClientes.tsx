@@ -22,7 +22,7 @@ const ViewClientes: React.FC = () => {
     const cargarUsuarios = async () => {
       setCargando(true);
       try {
-        const response = await fetch(`${baseURL}api/usuarios/`, {
+        const response = await fetch(`/api/usuarios/`, {
           headers: getAuthHeaders()
         });
         
@@ -45,7 +45,7 @@ const ViewClientes: React.FC = () => {
 
   const handleCambiarRol = async (id: number, nuevoRol: string) => {
     try {
-      const response = await fetch(`${baseURL}api/usuarios/${id}/cambiar_rol/`, {
+      const response = await fetch(`api/usuarios/`, {
         method: 'PATCH',
         headers: getAuthHeaders(),
         body: JSON.stringify({ rol: nuevoRol })
