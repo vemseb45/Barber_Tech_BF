@@ -28,7 +28,7 @@ export default function ViewTerminadas() {
       setLoading(true);
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch("http://127.0.0.1:8000/api/cita/terminadas/cliente/", {
+        const res = await fetch("/api/citas/terminadas/cliente/", {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,

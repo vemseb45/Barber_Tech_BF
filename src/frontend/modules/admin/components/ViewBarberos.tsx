@@ -46,17 +46,17 @@ const ViewBarberos: React.FC = () => {
     cargarUsuarios();
   }, []);
 
-  const handleCambiarRol = async (id: number, nuevoRol: string) => {
+  const handleCambiarRol = async (cedula: string, nuevoRol: string) => {
     if (!window.confirm("¿Quitar este usuario del equipo de barberos?")) return;
     try {
-      const response = await fetch(`${baseURL}api/usuarios/${id}/cambiar_rol/`, {
+      const response = await fetch(`${baseURL}api/usuarios/${cedula}/cambiar_rol/`, {
         method: 'PATCH',
         headers: getAuthHeaders(),
         body: JSON.stringify({ rol: nuevoRol })
       });
       if (!response.ok) throw new Error("Error");
       
-      setUsuarios((prev) => prev.filter((u) => u.id !== id));
+      setUsuarios((prev) => prev.filter((u) => u.cedula !== cedula));
     } catch (err) {
       alert("Error al actualizar el rol");
     }
@@ -72,7 +72,7 @@ const ViewBarberos: React.FC = () => {
   };
 
   const barberosFiltrados = usuarios.filter(u =>
-    u.username?.toLowerCase().includes(busqueda.toLowerCase())
+    `${u.nombre} ${u.apellidos}`.toLowerCase().includes(busqueda.toLowerCase())
   );
 
   return (
@@ -129,14 +129,16 @@ const ViewBarberos: React.FC = () => {
                 <tr><td colSpan={3} className="px-8 py-20 text-center text-slate-400">No hay barberos activos.</td></tr>
               ) : (
                 barberosFiltrados.map((user) => (
-                  <tr key={user.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/30 transition-all">
+                  <tr key={user.cedula} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/30 transition-all">
                     <td className="px-8 py-6">
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg bg-blue-500/10 text-blue-600">
-                          {user.username?.substring(0, 1).toUpperCase()}
+                          {user.nombre?.substring(0, 1).toUpperCase()}
                         </div>
                         <div>
-                          <p className="font-bold text-slate-800 dark:text-white">{user.username}</p>
+                          <p className="font-bold text-slate-800 dark:text-white">
+                            {user.nombre} {user.apellidos}
+                          </p>
                           <p className="text-[11px] text-slate-400 font-medium tracking-wider">{user.cedula ? `C.C. ${user.cedula}` : `C.C. No registrada`}</p>
                         </div>
                       </div>
@@ -149,7 +151,7 @@ const ViewBarberos: React.FC = () => {
                     <td className="px-8 py-6">
                       <div className="flex justify-center gap-3">
                         <button
-                          onClick={() => abrirModalHorario(user.id, user.username)}
+                          onClick={() => abrirModalHorario(user.cedula, `${user.nombre} ${user.apellidos}`)}
                           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-[11px] font-black shadow-md hover:bg-blue-700 transition-all"
                         >
                           <Calendar size={14} /> HORARIOS

@@ -40,12 +40,10 @@ export default function AgendaCitasCliente() {
 
   const router = useRouter();
 
-  // 1 y 2. Verificar Autenticación y Cargar Datos Iniciales (Mejorado)
   useEffect(() => {
     const inicializarModulo = async () => {
       const token = localStorage.getItem("token");
 
-      // Validar si no hay token o si se guardó mal como texto
       if (!token || token === "undefined" || token === "null") { 
         console.warn("No hay un token válido, redirigiendo a login...");
         router.push("/login"); 
@@ -53,11 +51,8 @@ export default function AgendaCitasCliente() {
       }
 
       try {
-        // Validar el JWT
         const decoded = jwtDecode<JwtPayload>(token);
-        console.log("Token decodificado correctamente:", decoded);
         
-        // Verificar si el token ya expiró
         const currentTime = Date.now() / 1000;
         if (decoded.exp && decoded.exp < currentTime) {
             console.warn("El token ha expirado. Redirigiendo a login...");
@@ -66,13 +61,11 @@ export default function AgendaCitasCliente() {
             return;
         }
 
-        // Algunos backends usan user_id, otros sub. Cubrimos ambos:
         const idCliente = decoded.user_id || decoded.sub || decoded.id;
         if (idCliente) {
             setCedulaCliente(Number(idCliente));
         }
 
-        // Hacemos las peticiones en paralelo
         const [resBarberos, resServicios] = await Promise.all([
           fetch("/api/barberos/"),
           fetch("/api/servicios/", {
@@ -80,7 +73,6 @@ export default function AgendaCitasCliente() {
           })
         ]);
 
-        // Solo te saca si el backend EXPRESAMENTE dice que tu token es inválido
         if (resServicios.status === 401 || resServicios.status === 403) {
             console.warn(`Error de autorización (${resServicios.status}). El backend rechazó el token.`);
             localStorage.removeItem("token");
@@ -88,7 +80,6 @@ export default function AgendaCitasCliente() {
             return;
         }
 
-        // Intentar leer los Barberos (sin que rompa toda la app si falla)
         try {
            const dataBarberos = await resBarberos.json();
            if (dataBarberos.success && Array.isArray(dataBarberos.data)) {
@@ -98,7 +89,6 @@ export default function AgendaCitasCliente() {
            console.error("Error leyendo los barberos. El servidor no envió un JSON válido:", e);
         }
 
-        // Intentar leer los Servicios
         try {
            const dataServicios = await resServicios.json();
            if (dataServicios.success && Array.isArray(dataServicios.data)) {
@@ -109,7 +99,6 @@ export default function AgendaCitasCliente() {
         }
 
       } catch (err) {
-        // AHORA: Si hay un error de red o de código, te lo mostrará en consola pero NO te cerrará la sesión.
         console.error("Error general inicializando el módulo (No serás expulsado):", err);
       }
     };
@@ -117,7 +106,6 @@ export default function AgendaCitasCliente() {
     inicializarModulo();
   }, [router]);
 
-  // 3. Cargar Disponibilidad cuando cambian los requisitos
   useEffect(() => {
     if (!barberoSeleccionado || !fechaSeleccionada || servicioSeleccionado === null) {
       setBloquesDisponibles([]);

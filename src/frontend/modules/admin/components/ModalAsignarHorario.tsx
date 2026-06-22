@@ -44,7 +44,7 @@ const ModalAsignarHorario: React.FC<ModalProps> = ({ isOpen, onClose, barberoId,
         headers: getAuthHeaders()
       });
       const data = await response.json();
-      
+
       const unicos = Object.values(
         (data.data || []).reduce((acc: any, curr: Horario) => {
           acc[curr.dia] = curr;
@@ -93,20 +93,20 @@ const ModalAsignarHorario: React.FC<ModalProps> = ({ isOpen, onClose, barberoId,
       const payload = {
         barberoId: barberoId,
         dia,
-        hora_inicio: `${horaInicio}:00`,
-        hora_fin: `${horaFin}:00`
+        hora_inicio: horaInicio, 
+        hora_fin: horaFin        
       };
-      
-      const url = editando 
+
+      const url = editando
         ? `${baseURL}api/agenda/configurar/${editando.id}/`
         : `${baseURL}api/agenda/configurar/`;
-        
+
       const response = await fetch(url, {
         method: editando ? 'PUT' : 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify(payload)
       });
-      
+
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) throw new Error(data.message || 'Error al guardar');
@@ -135,7 +135,7 @@ const ModalAsignarHorario: React.FC<ModalProps> = ({ isOpen, onClose, barberoId,
         method: 'DELETE',
         headers: getAuthHeaders()
       });
-      
+
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) throw new Error(data.message || 'Error al eliminar');

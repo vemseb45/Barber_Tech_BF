@@ -25,12 +25,12 @@ const ViewClientes: React.FC = () => {
         const response = await fetch(`/api/usuarios/`, {
           headers: getAuthHeaders()
         });
-        
+
         if (!response.ok) throw new Error("Error al cargar");
-        
+
         const resData = await response.json();
         const data = resData.data || resData;
-        
+
         // Filtramos para que esta vista solo maneje Clientes
         const soloClientes = (Array.isArray(data) ? data : []).filter(u => u.rol === 'Cliente');
         setUsuarios(soloClientes);
@@ -45,7 +45,7 @@ const ViewClientes: React.FC = () => {
 
   const handleCambiarRol = async (id: number, nuevoRol: string) => {
     try {
-      const response = await fetch(`api/usuarios/`, {
+      const response = await fetch(`/api/usuarios`, {
         method: 'PATCH',
         headers: getAuthHeaders(),
         body: JSON.stringify({ rol: nuevoRol })
@@ -60,8 +60,8 @@ const ViewClientes: React.FC = () => {
     }
   };
 
-  const clientesFiltrados = usuarios.filter(u => 
-    u.username?.toLowerCase().includes(busqueda.toLowerCase())
+  const clientesFiltrados = usuarios.filter(u =>
+    `${u.nombre} ${u.apellidos}`.toLowerCase().includes(busqueda.toLowerCase())
   );
 
   return (
@@ -103,14 +103,16 @@ const ViewClientes: React.FC = () => {
                 <tr><td colSpan={3} className="px-8 py-20 text-center text-slate-400">No hay clientes registrados.</td></tr>
               ) : (
                 clientesFiltrados.map((user) => (
-                  <tr key={user.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/30 transition-all">
+                  <tr key={user.cedula || user.email} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/30 transition-all">
                     <td className="px-8 py-6">
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg bg-blue-500/10 text-blue-600">
-                          {user.username?.substring(0, 1).toUpperCase()}
+                          {user.nombre?.substring(0, 1).toUpperCase()}
                         </div>
                         <div>
-                          <p className="font-bold text-slate-800 dark:text-white">{user.username}</p>
+                          <p className="font-bold text-slate-800 dark:text-white">
+                            {user.nombre} {user.apellidos}
+                          </p>
                           <p className="text-[11px] text-slate-400 font-medium">{user.cedula ? `C.C. ${user.cedula}` : `C.C. No registrada`}</p>
                         </div>
                       </div>

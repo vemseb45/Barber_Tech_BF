@@ -9,6 +9,7 @@ import ViewClientes from '@/frontend/modules/admin/components/ViewClientes';
 import ViewBarberos from '@/frontend/modules/admin/components/ViewBarberos';
 import ViewBarberias from '@/frontend/modules/admin/components/viewBarberias';
 import ViewServicios from '@/frontend/modules/admin/components/ViewServicios';
+import EstadisticasPage from '@/frontend/modules/admin/components/EstadisticasDashboard';
 
 export default function AdminLayout() {
   const [activeView, setActiveView] = useState<AdminView>('Inicio');
@@ -20,6 +21,7 @@ export default function AdminLayout() {
       case 'Barberos': return <ViewBarberos />;
       case 'Barberías': return <ViewBarberias />;
       case 'Servicios': return <ViewServicios/>;
+      case 'Reportes': return <EstadisticasPage/>;
       default: return <ViewInicio />;
     }
   };

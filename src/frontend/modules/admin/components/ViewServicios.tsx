@@ -1,15 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Plus, Edit3, Trash2, Clock, DollarSign, Sparkles } from "lucide-react";
+import React, { useState, useEffect, useCallback } from 'react';
+import { Plus, Edit3, Trash2, Clock, DollarSign, Sparkles } from 'lucide-react';
 
 interface BarberiaDetalle {
   id_barberia: number;
-  nombre: string;
-}
-
-interface EspecialidadDetalle {
-  id_especialidad: number;
   nombre: string;
 }
 
@@ -20,92 +15,84 @@ interface Servicio {
   precio: number;
   duracion_minutos: number;
   barberia: number;
-  especialidad: number;
   barberia_detalle?: BarberiaDetalle;
-  especialidad_detalle?: EspecialidadDetalle;
   imagen?: string | null;
 }
 
 export default function ViewServicios() {
-
   const [servicios, setServicios] = useState<Servicio[]>([]);
   const [barberias, setBarberias] = useState<BarberiaDetalle[]>([]);
-  const [especialidades, setEspecialidades] = useState<EspecialidadDetalle[]>([]);
   const [cargando, setCargando] = useState(false);
-
-  const [activeTab, setActiveTab] = useState("Todos");
-  const tabs = ["Todos", "Cabello", "Barba", "Tratamientos", "Combos", "Otros"];
-
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingService, setEditingService] = useState<Servicio | null>(null);
 
   const [formData, setFormData] = useState({
-    nombre: "",
-    descripcion: "",
-    precio: "",
-    duracion_minutos: "",
-    barberia: "",
-    especialidad: "",
+    nombre: '',
+    descripcion: '',
+    precio: '',
+    duracion_minutos: '',
+    barberia: ''
   });
-
   const [imagenFile, setImagenFile] = useState<File | null>(null);
 
-  const especialidadesFijas = [
-    { id_especialidad: 1, nombre: "Cabello" },
-    { id_especialidad: 2, nombre: "Barba" },
-    { id_especialidad: 3, nombre: "Tratamientos" },
-    { id_especialidad: 4, nombre: "Combos" },
-  ];
+  // --- FUNCIÓN MANEJADORA DEFINIDA DENTRO DEL COMPONENTE ---
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
 
-  // 🔥 FETCH DATA
-  const fetchData = async () => {
+  const fetchDatos = useCallback(async () => {
     setCargando(true);
     try {
-      const [resServicios, resBarberias, resEspecialidades] = await Promise.all([
-        fetch(`api/servicios/`, { cache: "no-store" }),
-        fetch(`api/barberias/`, { cache: "no-store" }),
-        fetch(`api/especialidades/`, { cache: "no-store" }),
+      const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
+      const headers: HeadersInit = {
+        'Authorization': token ? `Bearer ${token}` : '',
+        'Accept': 'application/json'
+      };
+
+      const [resServicios, resBarberias] = await Promise.all([
+        fetch("/api/servicios", { headers }),
+        fetch("/api/barberias", { headers })
       ]);
 
-      const dataServicios = await resServicios.json();
-      const dataBarberias = await resBarberias.json();
-      const dataEspecialidades = await resEspecialidades.json();
-
-      setServicios(dataServicios.data || dataServicios || []);
-      setBarberias(dataBarberias.data || dataBarberias || []);
-      setEspecialidades(dataEspecialidades.data || dataEspecialidades || []);
+      if (resServicios.ok && resBarberias.ok) {
+        const dataServicios = await resServicios.json();
+        const dataBarberias = await resBarberias.json();
+        setServicios(dataServicios.data || dataServicios || []);
+        setBarberias(dataBarberias.data || dataBarberias || []);
+      }
     } catch (error) {
-      console.error("Error fetching:", error);
+      console.error("Error cargando datos:", error);
     } finally {
       setCargando(false);
     }
-  };
-
-  useEffect(() => {
-    fetchData();
   }, []);
 
-  // MODAL
+  useEffect(() => {
+    fetchDatos();
+  }, [fetchDatos]);
+
   const handleOpenModal = (servicio: Servicio | null = null) => {
     if (servicio) {
       setEditingService(servicio);
       setFormData({
         nombre: servicio.nombre,
-        descripcion: servicio.descripcion,
+        descripcion: servicio.descripcion || '',
         precio: servicio.precio.toString(),
         duracion_minutos: servicio.duracion_minutos.toString(),
-        barberia: servicio.barberia.toString(),
-        especialidad: servicio.especialidad.toString(),
+        barberia: servicio.barberia.toString()
       });
     } else {
       setEditingService(null);
       setFormData({
-        nombre: "",
-        descripcion: "",
-        precio: "",
-        duracion_minutos: "",
-        barberia: "",
-        especialidad: "",
+        nombre: '',
+        descripcion: '',
+        precio: '',
+        duracion_minutos: '',
+        barberia: barberias.length > 0 ? barberias[0].id_barberia.toString() : ''
       });
     }
     setImagenFile(null);
@@ -117,114 +104,308 @@ export default function ViewServicios() {
     setEditingService(null);
   };
 
-  const handleChange = (e: any) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleFileChange = (e: any) => {
-    if (e.target.files?.length > 0) {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
       setImagenFile(e.target.files[0]);
     }
   };
 
-  // 💾 SAVE
-  const handleSave = async (e: any) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const formDataObj = new FormData();
-    formDataObj.append("nombre", formData.nombre);
-    formDataObj.append("descripcion", formData.descripcion);
-    formDataObj.append("precio", formData.precio);
-    formDataObj.append("duracion_minutos", formData.duracion_minutos);
-    formDataObj.append("barberia", formData.barberia);
+    try {
+      const token = localStorage.getItem("token");
 
-    if (formData.especialidad) {
-      formDataObj.append("especialidad", formData.especialidad);
+      const body = {
+        nombre: formData.nombre,
+        descripcion: formData.descripcion,
+        precio: Number(formData.precio),
+        duracion_minutos: Number(formData.duracion_minutos),
+        id_barberia: Number(formData.barberia)
+      };
+
+      const url = editingService
+        ? `/api/servicios/${editingService.id_servicio}`
+        : `/api/servicios`;
+
+      const res = await fetch(url, {
+        method: editingService ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(body)
+      });
+
+      const data = await res.json();
+      console.log(data);
+
+      if (!res.ok) throw new Error(data.message);
+
+      await fetchDatos();
+      closeModal();
+
+    } catch (error: any) {
+      console.error(error);
+      alert(error.message || "Error al procesar la solicitud.");
     }
+  };
 
-    if (imagenFile) {
-      formDataObj.append("imagen", imagenFile);
+
+  const handleDelete = async (id: number) => {
+    if (!window.confirm("¿Estás seguro de que deseas eliminar este servicio del catálogo base?")) {
+      return;
     }
 
     try {
-      const url = editingService
-        ? `api/servicios/${editingService.id_servicio}/`
-        : `api/servicios/`;
-
-      const method = editingService ? "PUT" : "POST";
-
-      await fetch(url, {
-        method,
-        body: formDataObj,
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/servicios/${id}`, {
+        method: 'DELETE',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        }
       });
 
-      await fetchData();
-      closeModal();
-    } catch (error) {
-      console.error("Error saving:", error);
-    }
-  };
-
-  // 🗑️ DELETE
-  const handleDelete = async (id: number) => {
-    if (confirm("¿Eliminar servicio?")) {
-      try {
-        await fetch(`api/servicios/`, {
-          method: "DELETE",
-        });
-        fetchData();
-      } catch (error) {
-        console.error("Error deleting:", error);
+      if (!res.ok) {
+        throw new Error("No se pudo eliminar el servicio");
       }
+
+      fetchDatos();
+    } catch (error: any) {
+      console.error("Error deleting service:", error);
+      alert(error.message || "Error al eliminar");
     }
   };
-
-  const filteredServicios = servicios.filter((s) => {
-    if (activeTab === "Todos") return true;
-    if (activeTab === "Otros")
-      return !s.especialidad_detalle?.nombre;
-    return s.especialidad_detalle?.nombre === activeTab;
-  });
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Servicios</h2>
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-6 duration-700">
 
-      <button onClick={() => handleOpenModal()}>
-        <Plus /> Nuevo
-      </button>
+      {/* HEADER DE SECCIÓN */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div>
+          <h2 className="text-3xl font-bold text-slate-800 dark:text-white flex items-center gap-3">
+            <Sparkles className="text-primary" size={28} />
+            Catálogo Global del Administrador
+          </h2>
+          <p className="text-slate-500 dark:text-slate-400 mt-1 font-medium">
+            Define la lista de los servicios disponibles en el sistema con sus precios base.
+          </p>
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {filteredServicios.map((servicio) => (
-          <div key={servicio.id_servicio} className="border p-4 rounded">
-            <h3>{servicio.nombre}</h3>
-            <p>{servicio.descripcion}</p>
-
-            <div className="flex gap-2 mt-2">
-              <button onClick={() => handleOpenModal(servicio)}>
-                <Edit3 />
-              </button>
-              <button onClick={() => handleDelete(servicio.id_servicio)}>
-                <Trash2 />
-              </button>
-            </div>
-          </div>
-        ))}
+        <button
+          onClick={() => handleOpenModal()}
+          className="w-full md:w-auto bg-primary hover:bg-primary/90 text-white px-8 py-3.5 rounded-[20px] flex items-center justify-center gap-2 transition-all shadow-xl shadow-primary/25 font-bold text-sm cursor-pointer active:scale-95"
+        >
+          <Plus size={20} strokeWidth={3} />
+          <span>Añadir Nuevo Servicio Global</span>
+        </button>
       </div>
 
-      {isModalOpen && (
-        <form onSubmit={handleSave} className="fixed inset-0 bg-black/50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded space-y-4">
-            <input name="nombre" onChange={handleChange} value={formData.nombre} placeholder="Nombre" />
-            <input name="precio" onChange={handleChange} value={formData.precio} placeholder="Precio" />
-            <textarea name="descripcion" onChange={handleChange} value={formData.descripcion} />
-
-            <input type="file" onChange={handleFileChange} />
-
-            <button type="submit">Guardar</button>
-            <button type="button" onClick={closeModal}>Cancelar</button>
+      {/* GRID DE SERVICIOS */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-8">
+        {cargando ? (
+          <div className="col-span-full py-12 text-center text-slate-500 dark:text-slate-400 animate-pulse">
+            Cargando servicios...
           </div>
-        </form>
+        ) : servicios.length === 0 ? (
+          <div className="col-span-full py-12 text-center text-slate-500 dark:text-slate-400">
+            No hay servicios creados aún.
+          </div>
+        ) : (
+          servicios.map((servicio) => (
+            <div
+              key={servicio.id_servicio}
+              className="group bg-white dark:bg-[#1e293b] rounded-[32px] border border-slate-200 dark:border-slate-700/50 overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-primary/10 transition-all duration-500 flex flex-col h-full"
+            >
+              {/* CONTENEDOR DE IMAGEN */}
+              <div className="h-56 relative overflow-hidden bg-slate-100 dark:bg-slate-800 flex items-center justify-center group-hover:scale-105 transition-transform duration-700">
+                {servicio.imagen ? (
+                  <img src={servicio.imagen.startsWith('http') ? servicio.imagen : `http://127.0.0.1:8000${servicio.imagen}`} alt={servicio.nombre} className="w-full h-full object-cover" />
+                ) : (
+                  <Sparkles className="text-slate-300 dark:text-slate-600 w-24 h-24 absolute opacity-20" />
+                )}
+
+                {/* CAPA DE GRADIENTE */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+                {/* BADGES FLOTANTES */}
+                <div className="absolute top-4 right-4 bg-white dark:bg-slate-900 px-4 py-2 rounded-2xl font-black text-primary text-sm shadow-xl flex items-center gap-1 group-hover:scale-110 transition-transform">
+                  <DollarSign size={14} strokeWidth={3} />
+                  {Number(servicio.precio).toLocaleString('es-CO')}
+                </div>
+
+                <div className="absolute bottom-4 left-4 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-xl text-white text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 border border-white/10">
+                  <Clock size={14} className="text-primary" />
+                  {servicio.duracion_minutos} MIN
+                </div>
+              </div>
+
+              {/* CUERPO DE LA TARJETA */}
+              <div className="p-6 flex flex-col flex-1">
+                <div className="mb-4">
+                  <h4 className="font-bold text-xl text-slate-800 dark:text-white group-hover:text-primary transition-colors duration-300">
+                    {servicio.nombre}
+                  </h4>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-3 leading-relaxed line-clamp-2 italic">
+                    "{servicio.descripcion}"
+                  </p>
+                </div>
+
+                {/* BOTONES DE ACCIÓN */}
+                <div className="flex gap-3 mt-auto pt-4">
+                  <button
+                    onClick={() => handleOpenModal(servicio)}
+                    className="flex-1 py-3 px-4 rounded-[16px] bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 text-slate-600 dark:text-slate-200 hover:bg-primary hover:text-white hover:border-primary transition-all duration-300 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Edit3 size={16} />
+                    Modificar
+                  </button>
+                  <button
+                    onClick={() => handleDelete(servicio.id_servicio)}
+                    className="p-3 rounded-[16px] border border-red-50 dark:border-red-900/20 text-red-400 hover:bg-red-500 hover:text-white transition-all duration-300 cursor-pointer"
+                    title="Eliminar del Sistema"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* MODAL PARA CREAR/EDITAR */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={closeModal}></div>
+
+          <div className="relative bg-white dark:bg-[#1e293b] rounded-[32px] shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-700 animate-in zoom-in-95 duration-200">
+            <div className="p-6 md:p-8 border-b border-slate-100 dark:border-slate-700/50 flex justify-between items-center shrink-0">
+              <div>
+                <h3 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                  <Sparkles className="text-primary" size={24} />
+                  {editingService ? 'Modificar Base' : 'Crear Base'}
+                </h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                  Cambios aquí afectarán al catálogo maestro.
+                </p>
+              </div>
+              <button
+                onClick={closeModal}
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors cursor-pointer text-slate-400"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSave} className="flex flex-col flex-1 overflow-hidden">
+              <div className="p-6 md:p-8 space-y-6 overflow-y-auto">
+                <div className="space-y-4">
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Nombre</label>
+                    <input
+                      required
+                      name="nombre"
+                      value={formData.nombre}
+                      onChange={handleChange}
+                      type="text"
+                      placeholder="Ej. Corte Premium"
+                      className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-5 py-3 text-slate-900 dark:text-white focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Precio Base ($)</label>
+                      <input
+                        required
+                        name="precio"
+                        value={formData.precio}
+                        onChange={handleChange}
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-5 py-3 text-slate-900 dark:text-white outline-none focus:border-primary transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Duración (min)</label>
+                      <input
+                        required
+                        name="duracion_minutos"
+                        value={formData.duracion_minutos}
+                        onChange={handleChange}
+                        type="number"
+                        placeholder="30"
+                        className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-5 py-3 text-slate-900 dark:text-white outline-none focus:border-primary transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Descripción</label>
+                    <textarea
+                      required
+                      name="descripcion"
+                      value={formData.descripcion}
+                      onChange={handleChange}
+                      rows={3}
+                      placeholder="Detalles sobre el servicio..."
+                      className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-5 py-3 text-slate-900 dark:text-white outline-none focus:border-primary transition-all resize-none"
+                    ></textarea>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Foto del Servicio (Opcional)</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-5 py-3 text-slate-900 dark:text-white outline-none transition-all file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer"
+                    />
+                    {editingService?.imagen && !imagenFile && (
+                      <p className="text-xs text-slate-500 mt-2 ml-2">Ya tiene una imagen. Sube otra para reemplazarla.</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Barbería</label>
+                    <select
+                      required
+                      name="barberia"
+                      value={formData.barberia}
+                      onChange={handleChange}
+                      className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-5 py-3 text-slate-900 dark:text-white outline-none focus:border-primary transition-all text-sm cursor-pointer"
+                    >
+                      <option value="" disabled>Selecciona una barbería</option>
+                      {barberias.map(b => (
+                        <option key={b.id_barberia} value={b.id_barberia}>{b.nombre}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 md:p-8 border-t border-slate-100 dark:border-slate-700/50 flex gap-3 shrink-0 bg-white dark:bg-[#1e293b]">
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="flex-1 py-4 rounded-2xl text-slate-500 font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex-[2] py-4 bg-primary text-white font-bold rounded-2xl hover:bg-[#7112b3] shadow-lg shadow-primary/20 transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2"
+                >
+                  {editingService ? <Edit3 size={18} /> : <Plus size={18} />}
+                  Guardar Cambios
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );
