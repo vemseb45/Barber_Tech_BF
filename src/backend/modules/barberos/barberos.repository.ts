@@ -3,23 +3,22 @@ import { CreateBarberoDTO } from "./dto/barbero.dto";
 
 export class BarberosRepository {
   /**
-   * Obtiene la lista completa de barberos junto con sus detalles de usuario y sede.
+   * Obtiene la lista de usuarios que son barberos, incluyendo su sede si la tienen.
    */
   static async findAll() {
-    return prisma.barberoDetalle.findMany({
+    return prisma.usuario.findMany({
+      where: {
+        rol: "Barbero",
+        estado: "Activo" // Buena práctica: solo mostrar barberos activos
+      },
       include: {
-        usuario: {
-          select: {
-            nombre: true,
-            apellidos: true,
-            email: true,
-            telefono: true,
-            estado: true,
-          }
-        },
-        barberia: {
-          select: {
-            nombre: true,
+        detalle_barbero: {
+          include: {
+            barberia: {
+              select: {
+                nombre: true
+              }
+            }
           }
         }
       }
@@ -28,12 +27,10 @@ export class BarberosRepository {
 
   /**
    * Ejecuta la transacción atómica: Crea el Usuario + el Detalle del Barbero.
-   * Si una de las dos operaciones falla, nada se guarda en PostgreSQL.
    */
   static async create(data: CreateBarberoDTO, passwordHash: string) {
     return prisma.$transaction(async (tx) => {
       
-      // Crear el usuario con el rol fijo "Barbero"
       const usuario = await tx.usuario.create({
         data: {
           cedula: data.cedula,
@@ -47,7 +44,6 @@ export class BarberosRepository {
         }
       });
 
-      // Crear el detalle del barbero vinculando a la sede
       const detalle = await tx.barberoDetalle.create({
         data: {
           cedula: usuario.cedula,

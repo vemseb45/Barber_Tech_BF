@@ -37,6 +37,7 @@ export default function AgendaCitasCliente() {
   const [horaDbSeleccionada, setHoraDbSeleccionada] = useState<string>("");
   const [bloquesDisponibles, setBloquesDisponibles] = useState<Bloque[]>([]);
   const [cedulaCliente, setCedulaCliente] = useState<number | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const router = useRouter();
 
@@ -67,10 +68,8 @@ export default function AgendaCitasCliente() {
         }
 
         const [resBarberos, resServicios] = await Promise.all([
-          fetch("/api/barberos/"),
-          fetch("/api/servicios/", {
-            headers: { "Authorization": `Bearer ${token}` }
-          })
+          fetch("/api/barberos", { headers: { "Authorization": `Bearer ${token}` } }),
+          fetch("/api/servicios", { headers: { "Authorization": `Bearer ${token}` } })
         ]);
 
         if (resServicios.status === 401 || resServicios.status === 403) {
@@ -83,10 +82,32 @@ export default function AgendaCitasCliente() {
         try {
            const dataBarberos = await resBarberos.json();
            if (dataBarberos.success && Array.isArray(dataBarberos.data)) {
-               setBarberos(dataBarberos.data);
+               // Añadimos el 'index' como segundo parámetro
+               const barberosFormateados: Barbero[] = dataBarberos.data.map((item: any, index: number) => {
+                    console.log("🔍 Item barbero:", JSON.stringify(item, null, 2)); // 👈 AGREGA ESTO
+
+                   const nombre = item.usuario?.nombre || item.nombre || "";
+                   const apellidos = item.usuario?.apellidos || item.apellidos || "";
+                   const especialidadSede = item.barberia?.nombre || item.detalle_barbero?.barberia?.nombre || "Barbero";
+
+                   // Buscamos el ID en distintas propiedades, con un respaldo de seguridad (fallback)
+                   const idSeguro = item.cedula || item.id || item.id_usuario || `temp-id-${index}`;
+                   const nombreCompleto = [nombre, apellidos]
+                    .filter(Boolean)       // elimina strings vacíos
+                    .join(" ")             // une con un solo espacio
+                    || "Sin Nombre";
+
+                   return {
+                       id: String(idSeguro),
+                       username: item.username || "Sin Nombre",
+                       especialidad: especialidadSede
+                   };
+               });
+
+               setBarberos(barberosFormateados);
            }
         } catch (e) {
-           console.error("Error leyendo los barberos. El servidor no envió un JSON válido:", e);
+           console.error("Error leyendo los barberos:", e);
         }
 
         try {
@@ -95,11 +116,11 @@ export default function AgendaCitasCliente() {
                setServicios(dataServicios.data);
            }
         } catch (e) {
-           console.error("Error leyendo los servicios. El servidor no envió un JSON válido:", e);
+           console.error("Error leyendo los servicios:", e);
         }
 
       } catch (err) {
-        console.error("Error general inicializando el módulo (No serás expulsado):", err);
+        console.error("Error general inicializando el módulo:", err);
       }
     };
 
@@ -126,7 +147,7 @@ export default function AgendaCitasCliente() {
             headers: { "Authorization": `Bearer ${token}` }
         });
         
-        if (!res.ok) throw new Error("Error en la respuesta del servidor al cargar disponibilidad");
+        if (!res.ok) throw new Error("Error cargando disponibilidad");
 
         const response = await res.json();
         let bloquesRaw: Bloque[] = response.success ? response.data : (Array.isArray(response) ? response : []);
@@ -154,16 +175,18 @@ export default function AgendaCitasCliente() {
       return;
     }
 
+    setIsSubmitting(true);
+
     const reservaData = {
       fecha: fechaSeleccionada,
-      hora: horaFinal,
+      hora: horaFinal, 
       cedula_barbero: barberoSeleccionado,
       cedula_cliente: String(cedulaCliente),
       servicio: servicioSeleccionado
     };
 
     try {
-      const response = await fetch("/api/citas/reservar/", {
+      const response = await fetch("/api/citas/reservar", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -173,8 +196,10 @@ export default function AgendaCitasCliente() {
       });
 
       const responseData = await response.json();
+      
       if (!response.ok) {
-        alert("Error: " + (responseData.message || JSON.stringify(responseData)));
+        alert("Error: " + (responseData.error || responseData.message || "Error desconocido al procesar la cita"));
+        setIsSubmitting(false);
         return;
       }
 
@@ -182,6 +207,7 @@ export default function AgendaCitasCliente() {
       window.location.reload();
     } catch (error) {
       alert("Error al conectar con el servidor.");
+      setIsSubmitting(false);
     }
   };
 
@@ -230,7 +256,7 @@ export default function AgendaCitasCliente() {
                 }`}
             >
               <p className="font-bold">{barbero.username}</p>
-              <p className="text-sm opacity-80">{barbero.especialidad || "Barbero"}</p>
+              <p className="text-sm opacity-80">{barbero.especialidad}</p>
             </motion.button>
           ))}
         </div>
@@ -319,11 +345,11 @@ export default function AgendaCitasCliente() {
         )}
 
         <button
-          disabled={!barberoSeleccionado || servicioSeleccionado === null || !fechaSeleccionada || !horaSeleccionada}
+          disabled={!barberoSeleccionado || servicioSeleccionado === null || !fechaSeleccionada || !horaSeleccionada || isSubmitting}
           onClick={handleConfirmar}
-          className="w-full py-4 bg-primary text-white rounded-xl font-bold text-lg disabled:opacity-50 hover:brightness-110 transition-all shadow-xl shadow-primary/20"
+          className="w-full py-4 bg-primary text-white rounded-xl font-bold text-lg disabled:opacity-50 hover:brightness-110 transition-all shadow-xl shadow-primary/20 flex justify-center items-center"
         >
-          Confirmar Cita
+          {isSubmitting ? "Procesando reserva..." : "Confirmar Cita"}
         </button>
       </div>
     </div>

@@ -4,8 +4,17 @@ import { prisma } from "@/backend/shared/prisma";
 import { hashPassword } from "@/backend/shared/password";
 
 export class BarberosService {
+  
   static async getAllBarberos() {
-    return await BarberosRepository.findAll();
+    const barberosRaw = await BarberosRepository.findAll();
+    
+    // Mapeamos los datos para proteger el modelo de base de datos 
+    // y entregar al front exactamente la interfaz que necesita.
+    return barberosRaw.map((user) => ({
+      id: user.cedula,
+      username: `${user.nombre} ${user.apellidos}`.trim(),
+      especialidad: user.detalle_barbero?.barberia?.nombre || "Barbero"
+    }));
   }
 
   static async createBarbero(data: CreateBarberoDTO) {
@@ -17,7 +26,6 @@ export class BarberosService {
       throw new Error("La barbería especificada no existe.");
     }
 
-    // Validar prevención de duplicados clave: Cédula, Email o Teléfono
     const existingUser = await prisma.usuario.findFirst({
       where: {
         OR: [
@@ -34,10 +42,8 @@ export class BarberosService {
       if (existingUser.telefono === data.telefono) throw new Error("El teléfono ya está registrado.");
     }
 
-    // Hashear la contraseña de forma segura antes de persistir
     const passwordHash = await hashPassword(data.contrasena);
 
-    // Delegar la transacción atómica al repositorio
     return await BarberosRepository.create(data, passwordHash);
   }
 }

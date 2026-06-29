@@ -40,10 +40,12 @@ export class AgendaService {
     const cedula = await this.obtenerCedulaBarbero(barberoId);
     if (!cedula) throw new Error("Barbero no existe");
 
-    const fechaObj = new Date(fechaStr);
-    // Ajustar el getDay de JS (0 es Domingo, 1 es Lunes) al mapa de Prisma
+    // Forzar la creación de la fecha localmente para evitar desfases horarios
+    const [y, m, d] = fechaStr.split('-').map(Number);
+    const fechaObj = new Date(y, m - 1, d); 
+    
     let indexDia = fechaObj.getDay() - 1;
-    if (indexDia === -1) indexDia = 6; // Ajuste para Domingo
+    if (indexDia === -1) indexDia = 6; 
     const nombreDia = this.diasMapeo[indexDia];
 
     const agenda = await this.repository.buscarAgendaBarbero(cedula, nombreDia);

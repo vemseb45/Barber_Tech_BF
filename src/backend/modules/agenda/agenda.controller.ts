@@ -38,22 +38,22 @@ export class AgendaController {
   }
 
   async getDisponibilidad(request: Request) {
-    try {
-      // Disponibilidad es pública (clientes la necesitan para reservar)
-      const { searchParams } = new URL(request.url);
-      const barberoId = searchParams.get('barberoId');
-      const fecha = searchParams.get('fecha');
+  try {
+    const { searchParams } = new URL(request.url);
+    // Cambiamos a 'barbero_id' para que coincida con lo que envías desde el front
+    const barberoId = searchParams.get('barbero_id'); 
+    const fecha = searchParams.get('fecha');
 
-      if (!barberoId || !fecha) {
-        return NextResponse.json({ success: false, message: 'Faltan parámetros' }, { status: 400 });
-      }
-
-      const bloques = await this.service.calcularDisponibilidad(barberoId, fecha);
-      return NextResponse.json({ success: true, message: 'Lista de horas disponibles', data: bloques });
-    } catch (error: any) {
-      return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    if (!barberoId || !fecha) {
+      return NextResponse.json({ success: false, message: 'Faltan parámetros' }, { status: 400 });
     }
+
+    const bloques = await this.service.calcularDisponibilidad(barberoId, fecha);
+    return NextResponse.json({ success: true, message: 'Lista de horas disponibles', data: bloques });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
+}
 
   async getHorariosConfigurados(request: Request) {
     try {
