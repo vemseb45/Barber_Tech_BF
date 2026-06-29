@@ -4,13 +4,14 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { jwtDecode } from 'jwt-decode';
 import { CalendarDays } from "lucide-react";
-import Calendario from "@/frontend/modules/cliente/components/Calendario"; 
+import Calendario from "@/frontend/modules/cliente/components/Calendario";
 import type { Bloque } from "@/frontend/modules/cliente/components/Calendario";
 
 interface JwtPayload {
   user_id?: string;
   sub?: string;
   id?: string;
+  cedula?: string;
   exp?: number;
 }
 
@@ -21,7 +22,7 @@ interface Barbero {
 }
 
 interface Servicio {
-  id_servicio: number; 
+  id_servicio: number;
   nombre: string;
   precio: string;
   duracion_minutos: number;
@@ -45,26 +46,29 @@ export default function AgendaCitasCliente() {
     const inicializarModulo = async () => {
       const token = localStorage.getItem("token");
 
-      if (!token || token === "undefined" || token === "null") { 
+      if (!token || token === "undefined" || token === "null") {
         console.warn("No hay un token válido, redirigiendo a login...");
-        router.push("/login"); 
-        return; 
+        router.push("/login");
+        return;
       }
 
       try {
         const decoded = jwtDecode<JwtPayload>(token);
-        
+
         const currentTime = Date.now() / 1000;
         if (decoded.exp && decoded.exp < currentTime) {
-            console.warn("El token ha expirado. Redirigiendo a login...");
-            localStorage.removeItem("token");
-            router.push("/login");
-            return;
+          console.warn("El token ha expirado. Redirigiendo a login...");
+          localStorage.removeItem("token");
+          router.push("/login");
+          return;
         }
 
-        const idCliente = decoded.user_id || decoded.sub || decoded.id;
+        const idCliente = decoded.cedula || decoded.user_id || decoded.sub || decoded.id;
+
         if (idCliente) {
-            setCedulaCliente(Number(idCliente));
+          setCedulaCliente(Number(idCliente));
+        } else {
+          console.error("No se encontró el ID o cédula del cliente en el token:", decoded);
         }
 
         const [resBarberos, resServicios] = await Promise.all([
@@ -73,50 +77,50 @@ export default function AgendaCitasCliente() {
         ]);
 
         if (resServicios.status === 401 || resServicios.status === 403) {
-            console.warn(`Error de autorización (${resServicios.status}). El backend rechazó el token.`);
-            localStorage.removeItem("token");
-            router.push("/login");
-            return;
+          console.warn(`Error de autorización (${resServicios.status}). El backend rechazó el token.`);
+          localStorage.removeItem("token");
+          router.push("/login");
+          return;
         }
 
         try {
-           const dataBarberos = await resBarberos.json();
-           if (dataBarberos.success && Array.isArray(dataBarberos.data)) {
-               // Añadimos el 'index' como segundo parámetro
-               const barberosFormateados: Barbero[] = dataBarberos.data.map((item: any, index: number) => {
-                    console.log("🔍 Item barbero:", JSON.stringify(item, null, 2)); // 👈 AGREGA ESTO
+          const dataBarberos = await resBarberos.json();
+          if (dataBarberos.success && Array.isArray(dataBarberos.data)) {
+            // Añadimos el 'index' como segundo parámetro
+            const barberosFormateados: Barbero[] = dataBarberos.data.map((item: any, index: number) => {
+              console.log("🔍 Item barbero:", JSON.stringify(item, null, 2)); // 👈 AGREGA ESTO
 
-                   const nombre = item.usuario?.nombre || item.nombre || "";
-                   const apellidos = item.usuario?.apellidos || item.apellidos || "";
-                   const especialidadSede = item.barberia?.nombre || item.detalle_barbero?.barberia?.nombre || "Barbero";
+              const nombre = item.usuario?.nombre || item.nombre || "";
+              const apellidos = item.usuario?.apellidos || item.apellidos || "";
+              const especialidadSede = item.barberia?.nombre || item.detalle_barbero?.barberia?.nombre || "Barbero";
 
-                   // Buscamos el ID en distintas propiedades, con un respaldo de seguridad (fallback)
-                   const idSeguro = item.cedula || item.id || item.id_usuario || `temp-id-${index}`;
-                   const nombreCompleto = [nombre, apellidos]
-                    .filter(Boolean)       // elimina strings vacíos
-                    .join(" ")             // une con un solo espacio
-                    || "Sin Nombre";
+              // Buscamos el ID en distintas propiedades, con un respaldo de seguridad (fallback)
+              const idSeguro = item.cedula || item.id || item.id_usuario || `temp-id-${index}`;
+              const nombreCompleto = [nombre, apellidos]
+                .filter(Boolean)       // elimina strings vacíos
+                .join(" ")             // une con un solo espacio
+                || "Sin Nombre";
 
-                   return {
-                       id: String(idSeguro),
-                       username: item.username || "Sin Nombre",
-                       especialidad: especialidadSede
-                   };
-               });
+              return {
+                id: String(idSeguro),
+                username: item.username || "Sin Nombre",
+                especialidad: especialidadSede
+              };
+            });
 
-               setBarberos(barberosFormateados);
-           }
+            setBarberos(barberosFormateados);
+          }
         } catch (e) {
-           console.error("Error leyendo los barberos:", e);
+          console.error("Error leyendo los barberos:", e);
         }
 
         try {
-           const dataServicios = await resServicios.json();
-           if (dataServicios.success && Array.isArray(dataServicios.data)) {
-               setServicios(dataServicios.data);
-           }
+          const dataServicios = await resServicios.json();
+          if (dataServicios.success && Array.isArray(dataServicios.data)) {
+            setServicios(dataServicios.data);
+          }
         } catch (e) {
-           console.error("Error leyendo los servicios:", e);
+          console.error("Error leyendo los servicios:", e);
         }
 
       } catch (err) {
@@ -136,17 +140,17 @@ export default function AgendaCitasCliente() {
     const fetchDisponibilidad = async () => {
       try {
         const token = localStorage.getItem("token");
-        
+
         const params = new URLSearchParams({
-            barbero_id: barberoSeleccionado,
-            fecha: fechaSeleccionada,
-            servicio_id: String(servicioSeleccionado)
+          barbero_id: barberoSeleccionado,
+          fecha: fechaSeleccionada,
+          servicio_id: String(servicioSeleccionado)
         });
 
         const res = await fetch(`/api/agenda/disponibilidad?${params.toString()}`, {
-            headers: { "Authorization": `Bearer ${token}` }
+          headers: { "Authorization": `Bearer ${token}` }
         });
-        
+
         if (!res.ok) throw new Error("Error cargando disponibilidad");
 
         const response = await res.json();
@@ -162,7 +166,7 @@ export default function AgendaCitasCliente() {
         setBloquesDisponibles([]);
       }
     };
-    
+
     fetchDisponibilidad();
   }, [barberoSeleccionado, fechaSeleccionada, servicioSeleccionado]);
 
@@ -179,7 +183,7 @@ export default function AgendaCitasCliente() {
 
     const reservaData = {
       fecha: fechaSeleccionada,
-      hora: horaFinal, 
+      hora: horaFinal,
       cedula_barbero: barberoSeleccionado,
       cedula_cliente: String(cedulaCliente),
       servicio: servicioSeleccionado
@@ -196,7 +200,7 @@ export default function AgendaCitasCliente() {
       });
 
       const responseData = await response.json();
-      
+
       if (!response.ok) {
         alert("Error: " + (responseData.error || responseData.message || "Error desconocido al procesar la cita"));
         setIsSubmitting(false);
@@ -219,11 +223,17 @@ export default function AgendaCitasCliente() {
       const fecha = new Date(hoy);
       fecha.setDate(hoy.getDate() + i);
 
+      // SOLUCIÓN: Construimos el YYYY-MM-DD manualmente con el año/mes/día local exacto
+      const año = fecha.getFullYear();
+      const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+      const dia = String(fecha.getDate()).padStart(2, '0');
+      const isoSeguro = `${año}-${mes}-${dia}`;
+
       dias.push({
         fecha,
         label: fecha.toLocaleDateString("es-CO", { weekday: "short" }),
         dia: fecha.getDate(),
-        iso: fecha.toLocaleDateString("sv-SE"),
+        iso: isoSeguro, // Ahora enviará siempre la fecha exacta del botón
       });
     }
 

@@ -42,10 +42,10 @@ export class AgendaService {
 
     // Forzar la creación de la fecha localmente para evitar desfases horarios
     const [y, m, d] = fechaStr.split('-').map(Number);
-    const fechaObj = new Date(y, m - 1, d); 
-    
+    const fechaObj = new Date(y, m - 1, d);
+
     let indexDia = fechaObj.getDay() - 1;
-    if (indexDia === -1) indexDia = 6; 
+    if (indexDia === -1) indexDia = 6;
     const nombreDia = this.diasMapeo[indexDia];
 
     const agenda = await this.repository.buscarAgendaBarbero(cedula, nombreDia);
@@ -65,34 +65,38 @@ export class AgendaService {
       const finCita = new Date(inicioCita.getTime() + duracion * 60000);
 
       while (tiempoTemp < finCita) {
-        horasOcupadas.push(tiempoTemp.toTimeString().substring(0, 5)); // "HH:MM"
-        tiempoTemp.setMinutes(tiempoTemp.getMinutes() + 30);
+        // SOLUCIÓN: Usar toISOString para forzar la lectura en UTC exacto
+        horasOcupadas.push(tiempoTemp.toISOString().substring(11, 16));
+        tiempoTemp.setUTCMinutes(tiempoTemp.getUTCMinutes() + 30); // Sumar minutos en UTC
       }
     }
 
-    // Solución: Definimos el tipo del arreglo explícitamente para TypeScript
     const bloques: any[] = [];
     const horaActual = new Date(agenda.hora_inicio);
     const horaFin = new Date(agenda.hora_fin);
 
     while (horaActual < horaFin) {
-      const horaDbStr = horaActual.toTimeString().substring(0, 5);
+      // SOLUCIÓN: Extraer la hora exactamente como está en la DB ignorando la zona horaria local
+      const horaDbStr = horaActual.toISOString().substring(11, 16);
 
       if (!horasOcupadas.includes(horaDbStr)) {
+        // SOLUCIÓN: Obligar al formateador a usar UTC
         const horaFormateada = horaActual.toLocaleTimeString('en-US', {
           hour: '2-digit',
           minute: '2-digit',
-          hour12: true
+          hour12: true,
+          timeZone: 'UTC'
         });
 
-        // Solución: Cambiamos .append() por .push()
         bloques.push({
           hora: horaFormateada,
           hora_db: `${horaDbStr}:00`,
           estado: "disponible"
         });
       }
-      horaActual.setMinutes(horaActual.getMinutes() + 30);
+
+      // Avanzar 30 minutos usando el reloj UTC
+      horaActual.setUTCMinutes(horaActual.getUTCMinutes() + 30);
     }
 
     return bloques;

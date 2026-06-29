@@ -8,9 +8,11 @@ export class CitaService {
       throw new Error("Todos los campos son obligatorios");
     }
 
-    const fecha = new Date(body.fecha);
-    const hora = new Date(`1970-01-01T${body.hora}:00Z`);
+    const fecha = new Date(`${body.fecha}T00:00:00`);
 
+    // Extraemos solo los primeros 5 caracteres (HH:mm) para asegurarnos de que el formato no falle
+    const horaString = body.hora.substring(0, 5);
+    const hora = new Date(`1970-01-01T${horaString}:00Z`);
     return this.repository.crear({
       fecha,
       hora,
