@@ -65,16 +65,7 @@
 
 @layer components {
   .input {
-    @apply w-full px-4 py-3 rounded-xl 
-    bg-slate-50 dark:bg-slate-900/50 
-    border border-slate-200 dark:border-slate-700 
-    outline-none 
-    focus:ring-4 focus:ring-primary/10 
-    focus:border-primary
-    transition-all 
-    font-medium 
-    text-slate-700 dark:text-white
-    placeholder:text-slate-400 dark:placeholder:text-slate-500;
+    @apply w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium text-slate-700 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500;
   }
 
   .input:disabled {
@@ -82,55 +73,72 @@
   }
 
   /* =========================================
-     ESTILOS PREMIUM BARBERÍA PARA DATEPICKER
-     ========================================= */
-  
-  .react-datepicker-wrapper {
-    width: 100%;
-  }
+   ESTILOS PREMIUM DATEPICKER (ADAPTABLE)
+   ========================================= */
 
-  /* El CSS normal sí soporta !important al final */
-  .react-datepicker__popper {
-    z-index: 50 !important;
-  }
-
-  /* Clases de Tailwind con prefijo "!" para forzar la prioridad */
   .react-datepicker {
-    @apply !bg-slate-900 !border !border-amber-500/30 !rounded-xl !shadow-2xl !shadow-amber-900/20 !font-sans !overflow-hidden;
+    @apply !bg-white !border !border-slate-200 !rounded-xl !shadow-2xl !font-sans !overflow-hidden;
+  }
+
+  .dark .react-datepicker {
+    @apply !bg-slate-900 !border-primary/30 !shadow-primary/20;
   }
 
   .react-datepicker__header {
-    @apply !bg-slate-950 !border-b !border-slate-800 !pt-4 !pb-2;
+    @apply !bg-slate-50 !border-b !border-slate-200 !pt-4 !pb-2;
+  }
+
+  .dark .react-datepicker__header {
+    @apply !bg-slate-950 !border-slate-800;
   }
 
   .react-datepicker__current-month {
-    @apply !text-amber-500 !font-bold !uppercase !tracking-widest !text-sm !mb-2;
+    @apply !text-slate-800 !font-bold !uppercase !tracking-widest !text-sm !mb-2;
   }
 
-  .react-datepicker__day-name {
-    @apply !text-slate-500 !font-bold !text-xs !uppercase !w-8 !m-1;
+  .dark .react-datepicker__current-month {
+    @apply !text-primary;
   }
 
   .react-datepicker__day {
-    @apply !text-slate-300 !font-medium !w-8 !h-8 !m-1 !leading-8 !rounded-md !transition-all !duration-200 hover:!bg-slate-800 hover:!text-amber-400 hover:!scale-110;
+    @apply !text-slate-700 !font-medium !w-8 !h-8 !m-1 !leading-8 !rounded-md !transition-all !duration-200;
   }
 
-  .react-datepicker__day--selected, 
-  .react-datepicker__day--keyboard-selected, 
-  .react-datepicker__day--in-selecting-range, 
+  .react-datepicker__day:hover {
+    @apply !bg-slate-100 !text-primary !scale-110;
+  }
+
+  .dark .react-datepicker__day {
+    @apply !text-slate-300;
+  }
+
+  .dark .react-datepicker__day:hover {
+    @apply !bg-slate-800;
+  }
+
+  .react-datepicker__day--selected,
+  .react-datepicker__day--keyboard-selected,
+  .react-datepicker__day--in-selecting-range,
   .react-datepicker__day--in-range {
-    @apply !bg-amber-500 !text-slate-950 !font-bold hover:!bg-amber-400 hover:!text-slate-900 !rounded-md !shadow-[0_0_10px_rgba(245,158,11,0.5)] !scale-110;
+    @apply !bg-primary !text-white !font-bold !rounded-md !shadow-[0_0_15px_rgba(133,25,210,0.4)] !scale-110;
   }
 
-  .react-datepicker__day--outside-month {
-    @apply !text-slate-700 hover:!bg-transparent hover:!text-slate-500 hover:!scale-100;
+  .react-datepicker__day--selected:hover {
+    @apply !bg-purple-600;
   }
 
   .react-datepicker__navigation-icon::before {
-    @apply !border-amber-500 !border-t-2 !border-r-2 !transition-colors hover:!border-amber-300;
+    @apply !border-slate-400 !border-t-2 !border-r-2 !transition-colors;
   }
 
-  /* Ocultar el triángulo nativo */
+  .react-datepicker__navigation-icon:hover::before {
+    @apply !border-purple-600;
+  }
+
+  .dark .react-datepicker__navigation-icon::before {
+    @apply !border-primary;
+  }
+
   .react-datepicker__triangle {
     display: none !important;
   }

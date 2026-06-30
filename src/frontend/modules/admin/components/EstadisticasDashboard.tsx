@@ -47,16 +47,17 @@ const CustomDateInput = forwardRef<HTMLButtonElement, any>(
       type="button"
       onClick={onClick}
       ref={ref}
-      className="group flex items-center justify-between w-full min-w-[150px] text-sm border-2 border-slate-800 rounded-lg px-4 py-2.5 bg-slate-900 text-slate-200 hover:border-amber-500 focus:outline-none focus:border-amber-500 transition-all shadow-lg"
+      // He ajustado bg y border para ser más flexibles
+      className="group flex items-center justify-between w-full min-w-[150px] text-sm border-2 border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:border-primary focus:outline-none focus:border-primary transition-all shadow-sm"
     >
       <span className="font-medium tracking-wide">
         {value ? (
-          <span className="text-amber-500">{value}</span>
+          <span className="text-primary">{value}</span>
         ) : (
-          <span className="text-slate-500">{placeholder}</span>
+          <span className="text-slate-400 dark:text-slate-500">{placeholder}</span>
         )}
       </span>
-      <Calendar className="w-4 h-4 text-slate-500 group-hover:text-amber-500 transition-colors ml-3" />
+      <Calendar className="w-4 h-4 text-slate-400 dark:text-slate-500 group-hover:text-primary transition-colors ml-3" />
     </button>
   )
 );
@@ -127,7 +128,7 @@ export default function EstadisticasPage() {
 
       {/* HEADER & FILTROS MEJORADOS */}
       <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 transition-all">
-        
+
         <div className="flex flex-col">
           <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
             {data?.nombreBarbero ? (
@@ -146,14 +147,14 @@ export default function EstadisticasPage() {
 
         {/* Panel de Filtros */}
         <div className="flex flex-wrap items-end gap-4 w-full xl:w-auto bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700/50">
-          
+
           <div className="flex flex-col relative z-20">
             <label className="text-xs text-slate-500 dark:text-slate-400 mb-1.5 font-semibold uppercase tracking-wider">
               Desde
             </label>
             <DatePicker
               selected={fechaInicio}
-              onChange={(date) => setFechaInicio(date)}
+              onChange={(date: Date | null) => setFechaInicio(date)}
               selectsStart
               startDate={fechaInicio}
               endDate={fechaFin}
@@ -170,7 +171,7 @@ export default function EstadisticasPage() {
             </label>
             <DatePicker
               selected={fechaFin}
-              onChange={(date) => setFechaFin(date)}
+              onChange={(date: Date | null) => setFechaFin(date)}
               selectsEnd
               startDate={fechaInicio}
               endDate={fechaFin}
