@@ -9,15 +9,32 @@ export class CitaController {
   async reservarCita(request: Request) {
     try {
       const session = await getSessionUser();
-      if (!session) {
-        return NextResponse.json({ success: false, message: 'No autenticado' }, { status: 401 });
-      }
+      if (!session) return NextResponse.json({ success: false, message: 'No autenticado' }, { status: 401 });
 
       const body = await request.json();
-      await this.service.reservar(body);
-      return NextResponse.json({ mensaje: 'Cita creada con éxito' }, { status: 201 });
+      body.cedula_cliente = session.cedula;
+
+      const resultado = await this.service.reservar(body);
+      return NextResponse.json({ success: true, ...resultado }, { status: 201 });
     } catch (error: any) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      return NextResponse.json({ success: false, message: error.message }, { status: 400 });
+    }
+  }
+  async getPosCitas(request: Request) {
+    try {
+      const session = await getSessionUser();
+      if (!session || session.rol !== 'Admin') {
+        return NextResponse.json({ success: false, message: 'No autorizado. Solo Admin.' }, { status: 403 });
+      }
+
+      const { searchParams } = new URL(request.url);
+      const cedula = searchParams.get('cedula');
+      if (!cedula) return NextResponse.json({ success: false, message: 'Falta la cédula del cliente' }, { status: 400 });
+
+      const saldos = await this.service.obtenerCitasPOS(cedula);
+      return NextResponse.json({ success: true, data: saldos });
+    } catch (error: any) {
+      return NextResponse.json({ success: false, message: error.message }, { status: 500 });
     }
   }
 
