@@ -30,8 +30,9 @@ export class AgendaMapper {
     return agendas.map(agenda => ({
       cedula_barbero: agenda.cedula_barbero,
       dia: agenda.dia,
-      hora_inicio: new Date(agenda.hora_inicio).toTimeString().split(' ')[0].substring(0, 5),
-      hora_fin: new Date(agenda.hora_fin).toTimeString().split(' ')[0].substring(0, 5)
+      // Usamos toISOString para forzar la lectura en UTC y evitar el desfase de 5 horas
+      hora_inicio: new Date(agenda.hora_inicio).toISOString().substring(11, 16),
+      hora_fin: new Date(agenda.hora_fin).toISOString().substring(11, 16)
     }));
   }
 }

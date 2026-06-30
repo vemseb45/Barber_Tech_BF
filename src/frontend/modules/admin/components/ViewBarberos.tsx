@@ -11,11 +11,10 @@ const ViewBarberos: React.FC = () => {
   const [busqueda, setBusqueda] = useState('');
   const [cargando, setCargando] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  const [barberoSeleccionado, setBarberoSeleccionado] = useState<{ id: number; nombre: string } | null>(null);
+  const [barberoSeleccionado, setBarberoSeleccionado] = useState<{ id: string | number; nombre: string } | null>(null);
   const [mostrarCargaMasiva, setMostrarCargaMasiva] = useState(false);
   const [mostrarCrear, setMostrarCrear] = useState(false);
 
-  // Helper para Fetch Nativo
   const baseURL = process.env.NEXT_PUBLIC_API_URL || "";
   const getAuthHeaders = () => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
@@ -30,7 +29,7 @@ const ViewBarberos: React.FC = () => {
     try {
       const response = await fetch(`${baseURL}api/usuarios/`, { headers: getAuthHeaders() });
       if (!response.ok) throw new Error("Error fetching");
-      
+
       const resData = await response.json();
       const data = resData.data || resData;
       const soloBarberos = (Array.isArray(data) ? data : []).filter(u => u.rol === 'Barbero');
@@ -49,13 +48,13 @@ const ViewBarberos: React.FC = () => {
   const handleCambiarRol = async (cedula: string, nuevoRol: string) => {
     if (!window.confirm("¿Quitar este usuario del equipo de barberos?")) return;
     try {
-      const response = await fetch(`${baseURL}api/usuarios/${cedula}/cambiar_rol/`, {
+      const response = await fetch(`/api/usuarios/${cedula}`, {
         method: 'PATCH',
         headers: getAuthHeaders(),
         body: JSON.stringify({ rol: nuevoRol })
       });
       if (!response.ok) throw new Error("Error");
-      
+
       setUsuarios((prev) => prev.filter((u) => u.cedula !== cedula));
     } catch (err) {
       alert("Error al actualizar el rol");
@@ -66,14 +65,18 @@ const ViewBarberos: React.FC = () => {
     await cargarUsuarios();
   };
 
-  const abrirModalHorario = (id: number, nombre: string) => {
+  const abrirModalHorario = (id: string | number, nombre: string) => {
     setBarberoSeleccionado({ id, nombre });
     setModalOpen(true);
   };
 
-  const barberosFiltrados = usuarios.filter(u =>
-    `${u.nombre} ${u.apellidos}`.toLowerCase().includes(busqueda.toLowerCase())
-  );
+  // Corrección 1: Validación segura en el filtro
+  const barberosFiltrados = usuarios.filter(u => {
+    const nombre = u.nombre || '';
+    // Cubrimos "apellidos" y "apellido" por si la API envía uno u otro
+    const apellido = u.apellidos || (u as any).apellido || '';
+    return `${nombre} ${apellido}`.toLowerCase().includes(busqueda.toLowerCase());
+  });
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -128,18 +131,22 @@ const ViewBarberos: React.FC = () => {
               ) : barberosFiltrados.length === 0 ? (
                 <tr><td colSpan={3} className="px-8 py-20 text-center text-slate-400">No hay barberos activos.</td></tr>
               ) : (
-                barberosFiltrados.map((user) => (
-                  <tr key={user.cedula} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/30 transition-all">
+                // 1. Agregamos "index" para usarlo como key de emergencia si no hay id ni cédula
+                barberosFiltrados.map((user, index) => (
+                  // 2. Usamos user.id como key principal, ya que siempre es único
+                  <tr key={user.id || index} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/30 transition-all">
                     <td className="px-8 py-6">
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg bg-blue-500/10 text-blue-600">
-                          {user.nombre?.substring(0, 1).toUpperCase()}
+                          {user.nombre ? user.nombre.substring(0, 1).toUpperCase() : 'B'}
                         </div>
                         <div>
                           <p className="font-bold text-slate-800 dark:text-white">
-                            {user.nombre} {user.apellidos}
+                            {user.nombre || 'Sin nombre'} {user.apellidos || (user as any).apellido || ''}
                           </p>
-                          <p className="text-[11px] text-slate-400 font-medium tracking-wider">{user.cedula ? `C.C. ${user.cedula}` : `C.C. No registrada`}</p>
+                          <p className="text-[11px] text-slate-400 font-medium tracking-wider">
+                            {user.cedula ? `C.C. ${user.cedula}` : `C.C. No registrada`}
+                          </p>
                         </div>
                       </div>
                     </td>
@@ -151,13 +158,15 @@ const ViewBarberos: React.FC = () => {
                     <td className="px-8 py-6">
                       <div className="flex justify-center gap-3">
                         <button
-                          onClick={() => abrirModalHorario(user.cedula, `${user.nombre} ${user.apellidos}`)}
+                          // 3. Si no hay cédula, pasamos el ID o un string vacío para que TypeScript no arroje error
+                          onClick={() => abrirModalHorario(user.cedula || user.id, `${user.nombre || ''} ${user.apellidos || (user as any).apellido || ''}`.trim() || 'Barbero')}
                           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-[11px] font-black shadow-md hover:bg-blue-700 transition-all"
                         >
                           <Calendar size={14} /> HORARIOS
                         </button>
                         <button
-                          onClick={() => handleCambiarRol(user.id, 'Cliente')}
+                          // 4. Aseguramos que se envíe un string a handleCambiarRol usando String() o enviando la cédula directamente
+                          onClick={() => handleCambiarRol(user.cedula || String(user.id), 'Cliente')}
                           className="p-2.5 bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-red-500 rounded-xl transition-all"
                           title="Quitar de equipo"
                         >
@@ -177,7 +186,8 @@ const ViewBarberos: React.FC = () => {
         <ModalAsignarHorario
           isOpen={modalOpen}
           onClose={() => { setModalOpen(false); setBarberoSeleccionado(null); }}
-          barberoId={barberoSeleccionado.id}
+          // Pasamos el ID forzado como number si tu Modal lo requiere estrictamente así
+          barberoId={barberoSeleccionado.id as number}
           nombreBarbero={barberoSeleccionado.nombre}
         />
       )}

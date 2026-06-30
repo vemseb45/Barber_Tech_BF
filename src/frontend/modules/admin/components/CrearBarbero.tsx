@@ -11,7 +11,6 @@ interface Props {
 const CrearBarbero: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
 
   const [form, setForm] = useState({
-    username: '',
     password: '',
     confirmPassword: '',
     first_name: '',
@@ -57,7 +56,6 @@ const CrearBarbero: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
   const validar = () => {
     let newErrors: any = {};
 
-    if (!form.username.trim()) newErrors.username = "Requerido";
     if (!form.first_name.trim()) newErrors.first_name = "Requerido";
     if (!form.last_name.trim()) newErrors.last_name = "Requerido";
 
@@ -106,12 +104,22 @@ const CrearBarbero: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
     try {
       setLoading(true);
 
-      const { confirmPassword, ...data } = form;
+      // Transformamos el estado del formulario al formato exacto que espera el backend
+      const payload = {
+        nombre: form.first_name,
+        apellidos: form.last_name,
+        contrasena: form.password,
+        id_barberia: Number(form.barberia_id), // Aseguramos que sea número
+        email: form.email,
+        cedula: form.cedula,
+        telefono: form.telefono,
+        especialidad_id: Number(form.especialidad_id) // Si el backend espera "id_especialidad", cámbialo aquí también
+      };
 
-      const response = await fetch(`${baseURL}api/barberos/crear-barbero/`, {
+      const response = await fetch(`${baseURL}/api/barberos`, {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify(data)
+        body: JSON.stringify(payload)
       });
 
       const resData = await response.json().catch(() => ({}));
@@ -121,8 +129,9 @@ const CrearBarbero: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
       onSuccess();
       onClose();
 
+      // Limpiamos el formulario
       setForm({
-        username: '', password: '', confirmPassword: '', first_name: '',
+        password: '', confirmPassword: '', first_name: '',
         last_name: '', email: '', cedula: '', telefono: '',
         barberia_id: 1, especialidad_id: 1
       });
@@ -156,7 +165,6 @@ const CrearBarbero: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
 
         <div className="grid grid-cols-2 gap-4">
           {[
-            { label: "Username", name: "username" },
             { label: "Email", name: "email" },
             { label: "Nombre", name: "first_name" },
             { label: "Apellido", name: "last_name" },
@@ -174,7 +182,7 @@ const CrearBarbero: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
             <label className="text-xs font-bold mb-1 block">Contraseña</label>
             <input type={showPassword ? "text" : "password"} name="password" onChange={handleChange} className={`${inputClass("password")} pr-10`} />
             <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-9 text-slate-400">
-              {showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
             {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
           </div>
@@ -183,7 +191,7 @@ const CrearBarbero: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
             <label className="text-xs font-bold mb-1 block">Confirmar Contraseña</label>
             <input type={showConfirmPassword ? "text" : "password"} name="confirmPassword" onChange={handleChange} className={`${inputClass("confirmPassword")} pr-10`} />
             <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-9 text-slate-400">
-              {showConfirmPassword ? <EyeOff size={18}/> : <Eye size={18}/>}
+              {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
             {errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>}
           </div>

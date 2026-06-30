@@ -9,6 +9,10 @@ export interface Usuario {
   cedula?: string;
   rol: 'Cliente' | 'Barbero' | 'Administrador';
   telefono?: string;
+  // Agregamos las propiedades faltantes para que TypeScript deje de marcar error
+  nombre?: string;
+  apellidos?: string;
+  apellido?: string; // Lo dejamos por precaución por si la API lo envía en singular
 }
 
 // Definición para las sucursales

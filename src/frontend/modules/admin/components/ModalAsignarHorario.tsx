@@ -10,7 +10,7 @@ interface ModalProps {
 }
 
 interface Horario {
-  id: number;
+  cedula_barbero: string;
   dia: string;
   hora_inicio: string;
   hora_fin: string;
@@ -93,16 +93,16 @@ const ModalAsignarHorario: React.FC<ModalProps> = ({ isOpen, onClose, barberoId,
       const payload = {
         barberoId: barberoId,
         dia,
-        hora_inicio: horaInicio, 
-        hora_fin: horaFin        
+        hora_inicio: horaInicio,
+        hora_fin: horaFin
       };
 
       const url = editando
-        ? `${baseURL}api/agenda/configurar/${editando.id}/`
+        ? `${baseURL}api/agenda/configurar/`
         : `${baseURL}api/agenda/configurar/`;
 
       const response = await fetch(url, {
-        method: editando ? 'PUT' : 'POST',
+        method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify(payload)
       });
@@ -124,14 +124,17 @@ const ModalAsignarHorario: React.FC<ModalProps> = ({ isOpen, onClose, barberoId,
     }
   };
 
-  const handleEliminar = async (id: number) => {
+  const handleEliminar = async (cedula: string, diaAEliminar: string) => {
     if (!confirm('¿Eliminar este horario?')) return;
 
     setEnviando(true);
     setMensaje(null);
 
     try {
-      const response = await fetch(`${baseURL}api/agenda/configurar/${id}/`, {
+      // Armamos la URL con los parámetros que pide tu backend (cedula y dia)
+      const url = `${baseURL}api/agenda/configurar/?cedula=${cedula}&dia=${diaAEliminar}`;
+
+      const response = await fetch(url, {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -157,7 +160,6 @@ const ModalAsignarHorario: React.FC<ModalProps> = ({ isOpen, onClose, barberoId,
     }
   };
 
-  // ... Resto de la interfaz (return) que enviaste, se mantiene exactamente igual.
   return (
     <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-md transition-all">
       <div className="bg-white dark:bg-[#0f172a] w-full max-w-4xl rounded-[32px] shadow-2xl border border-white/20 overflow-hidden flex flex-col max-h-[90vh]">
@@ -199,7 +201,7 @@ const ModalAsignarHorario: React.FC<ModalProps> = ({ isOpen, onClose, barberoId,
                     {h && (
                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button onClick={() => abrirModal(d, h)} className="p-1.5 hover:bg-blue-50 text-blue-500 rounded-lg"><Pencil size={14} /></button>
-                        <button onClick={() => handleEliminar(h.id)} className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg"><Trash2 size={14} /></button>
+                        <button onClick={() => handleEliminar(h.cedula_barbero, h.dia)} className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg"><Trash2 size={14} /></button>
                       </div>
                     )}
                   </div>

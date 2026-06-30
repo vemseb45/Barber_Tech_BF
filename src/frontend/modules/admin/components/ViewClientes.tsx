@@ -43,23 +43,34 @@ const ViewClientes: React.FC = () => {
     cargarUsuarios();
   }, []);
 
-  const handleCambiarRol = async (id: number, nuevoRol: string) => {
+  // 1. Cambiamos 'id: number' por 'cedula: string'
+  const handleCambiarRol = async (cedula: string | undefined, nuevoRol: string) => {
+    if (!cedula) {
+      alert("Error: Este usuario no tiene una cédula registrada, no se puede cambiar el rol.");
+      return;
+    }
+
+    // ESTO TE AYUDARÁ A DEBUGEAR
+    console.log(`Ejecutando PATCH a la ruta: /api/usuarios/${cedula}`);
+
     try {
-      const response = await fetch(`/api/usuarios`, {
+      const response = await fetch(`/api/usuarios/${cedula}`, {
         method: 'PATCH',
         headers: getAuthHeaders(),
         body: JSON.stringify({ rol: nuevoRol })
       });
 
-      if (!response.ok) throw new Error("Error al cambiar rol");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Error al cambiar rol");
+      }
 
-      // Al cambiar el rol, desaparece de esta vista de clientes
-      setUsuarios((prev) => prev.filter((u) => u.id !== id));
-    } catch (err) {
-      alert("Error al actualizar el rol");
+      setUsuarios((prev) => prev.filter((u) => u.cedula !== cedula));
+    } catch (err: any) {
+      alert(`Error al actualizar el rol: ${err.message}`);
     }
   };
-
+  
   const clientesFiltrados = usuarios.filter(u =>
     `${u.nombre} ${u.apellidos}`.toLowerCase().includes(busqueda.toLowerCase())
   );
@@ -124,7 +135,13 @@ const ViewClientes: React.FC = () => {
                     </td>
                     <td className="px-8 py-6">
                       <div className="flex justify-center gap-3">
-                        <button onClick={() => handleCambiarRol(user.id, 'Barbero')} className="px-4 py-2 border border-slate-200 dark:border-slate-700 text-purple-600 hover:bg-purple-600 hover:text-white rounded-xl text-[11px] font-black transition-all">HACER BARBERO</button>
+                        {/* 4. Pasamos user.cedula a la función de cambio de rol */}
+                        <button 
+                          onClick={() => handleCambiarRol(user.cedula, 'Barbero')} 
+                          className="px-4 py-2 border border-slate-200 dark:border-slate-700 text-purple-600 hover:bg-purple-600 hover:text-white rounded-xl text-[11px] font-black transition-all"
+                        >
+                          HACER BARBERO
+                        </button>
                       </div>
                     </td>
                   </tr>
