@@ -5,7 +5,7 @@ export class AgendaRepository {
   // Buscar un usuario por su ID secuencial/autoincremental o Cédula
   async buscarUsuarioPorId(id: number) {
     return prisma.usuario.findUnique({
-      where: { cedula: String(id) } 
+      where: { cedula: String(id) }
     });
   }
 
@@ -81,10 +81,20 @@ export class AgendaRepository {
 
   // Buscar citas de un barbero para una fecha específica
   async buscarCitasFecha(cedula_barbero: string, fecha: Date) {
+    // Configuramos la fecha para que abarque todo el día (00:00:00 a 23:59:59)
+    const inicioDia = new Date(fecha);
+    inicioDia.setHours(0, 0, 0, 0);
+
+    const finDia = new Date(fecha);
+    finDia.setHours(23, 59, 59, 999);
+
     return prisma.cita.findMany({
       where: {
         cedula_barbero,
-        fecha: fecha
+        fecha: {
+          gte: inicioDia, // Mayor o igual al inicio del día
+          lte: finDia     // Menor o igual al fin del día
+        }
       },
       include: {
         cliente: true,

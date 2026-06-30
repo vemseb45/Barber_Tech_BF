@@ -61,15 +61,12 @@ export class CitaController {
         return NextResponse.json({ success: false, message: 'No autenticado' }, { status: 401 });
       }
 
+      // Usamos session.cedula directamente (es más seguro que confiar en la URL)
       const { searchParams } = new URL(request.url);
-      const barberoId = searchParams.get('barberoId');
       const estado = searchParams.get('estado');
 
-      if (!barberoId) {
-        return NextResponse.json({ success: false, message: 'Falta barberoId' }, { status: 400 });
-      }
-
-      const citas = await this.service.obtenerHistorialBarbero(barberoId, estado || undefined);
+      // Llamamos al servicio con la cédula del barbero logueado
+      const citas = await this.service.obtenerHistorialBarbero(session.cedula, estado || undefined);
       const dataMapped = CitaMapper.toHistorialResponseList(citas);
 
       return NextResponse.json({ success: true, data: dataMapped });

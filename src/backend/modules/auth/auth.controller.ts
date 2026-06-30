@@ -7,6 +7,7 @@ import { registerSchema } from "./validators/register.validator";
 import { loginUser, registerUser, verifyLogin2fa } from "./auth.service";
 import { setSessionCookie, clearSessionCookie } from "./security/session.service";
 import { getSessionUser } from "@/backend/shared/get-session-user";
+import { findUserByCedula } from "./auth.repository";
 
 async function readJsonBody(req: NextRequest) {
   const text = await req.text();
@@ -124,17 +125,34 @@ export async function registerController(req: NextRequest) {
 }
 
 export async function meController(req: NextRequest) {
-  const session = await getSessionUser();
+  try {
+    const session = await getSessionUser();
 
-  if (!session) {
-    return NextResponse.json({ ok: false, message: "No autorizado" }, { status: 401 });
+    if (!session) {
+      return NextResponse.json({ ok: false, message: "No autorizado" }, { status: 401 });
+    }
+
+    // 1. Buscamos el usuario completo en la base de datos
+    const fullUser = await findUserByCedula(session.cedula);
+
+    if (!fullUser) {
+      return NextResponse.json({ ok: false, message: "Usuario no encontrado" }, { status: 404 });
+    }
+
+    // 2. Retornamos los datos completos bajo la propiedad "data" 
+    // para que coincida con lo que espera el Frontend.
+    return NextResponse.json({ 
+      ok: true, 
+      data: {
+        nombre: fullUser.nombre,
+        apellidos: fullUser.apellidos,
+        email: fullUser.email,
+        telefono: fullUser.telefono
+      }
+    }, { status: 200 });
+
+  } catch (error) {
+    console.error("Error en meController:", error);
+    return NextResponse.json({ ok: false, message: "Error interno" }, { status: 500 });
   }
-
-  return NextResponse.json({ ok: true, user: session }, { status: 200 });
-}
-
-export async function logoutController(req: NextRequest) {
-  await clearSessionCookie();
-
-  return NextResponse.json({ ok: true, message: "Sesión cerrada" }, { status: 200 });
 }

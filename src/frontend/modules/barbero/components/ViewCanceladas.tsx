@@ -17,23 +17,12 @@ interface JwtPayload {
 }
 
 export default function ViewCanceladas() {
-  const [citasCanceladas, setCitasCanceladas] = useState<CitaCancelada[]>([]);
-  const [miIdBarbero, setMiIdBarbero] = useState<string | null>(null);
+  const [citasCanceladas, setCitasCanceladas] = useState<CitaCancelada[]>([])
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) return;
-    try {
-      const decoded = jwtDecode<JwtPayload>(token);
-      if (decoded.user_id) setMiIdBarbero(String(decoded.user_id));
-    } catch (error) {
-      console.error("Error al decodificar el token");
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!miIdBarbero) return;
-    fetch(`/api/citas/historial`)
+    fetch(`/api/citas/historial?estado=CANC`, {
+      credentials: "include"
+    })
       .then(res => res.json())
       .then(response => {
         if (response.success && Array.isArray(response.data)) {
@@ -41,13 +30,12 @@ export default function ViewCanceladas() {
         }
       })
       .catch(() => setCitasCanceladas([]));
-  }, [miIdBarbero]);
-
+  }, []);
   const totalPerdido = citasCanceladas.reduce((acc, s) => acc + s.precio, 0);
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      
+
       {/* HEADER PROFESIONAL */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-slate-100 dark:border-slate-800 pb-6">
         <div>

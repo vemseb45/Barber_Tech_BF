@@ -18,36 +18,46 @@ interface JwtPayload {
 
 export default function ViewHistorial() {
   const [serviciosRealizados, setServiciosRealizados] = useState<ServicioRealizado[]>([]);
+  const [loading, setLoading] = useState(true);
+  // ESTA ERA LA LÍNEA QUE FALTABA:
   const [miIdBarbero, setMiIdBarbero] = useState<string | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (!token) return;
+    if (!token) {
+      setLoading(false);
+      return;
+    }
     try {
       const decoded = jwtDecode<JwtPayload>(token);
-      if (decoded.user_id) setMiIdBarbero(String(decoded.user_id));
+      if (decoded.user_id) {
+        setMiIdBarbero(String(decoded.user_id));
+      }
     } catch (error) {
-      console.error("Error token");
+      console.error("Error al decodificar el token");
+    } finally {
+      setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    if (!miIdBarbero) return;
-    fetch(`http://127.0.0.1:8000/api/cita/historial/?barberoId=${miIdBarbero}`)
+    fetch(`/api/citas/historial`, {
+      credentials: "include"
+    })
       .then(res => res.json())
       .then(response => {
         if (response.success && Array.isArray(response.data)) {
           setServiciosRealizados(response.data);
         }
       })
-      .catch(() => setServiciosRealizados([]));
-  }, [miIdBarbero]);
+      .catch(() => setServiciosRealizados([]))
+      .finally(() => setLoading(false));
+  }, []);
 
   const totalGenerado = serviciosRealizados.reduce((acc, s) => acc + s.precio, 0);
-
   return (
     <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      
+
       {/* HEADER PROFESIONAL */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-slate-100 dark:border-slate-800 pb-6">
         <div>

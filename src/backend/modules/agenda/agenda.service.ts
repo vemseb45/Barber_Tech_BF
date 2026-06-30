@@ -26,7 +26,12 @@ export class AgendaService {
     if (fechaInicio && fechaFin) {
       citas = await this.repository.buscarCitasRango(cedula, new Date(fechaInicio), new Date(fechaFin));
     } else if (fecha) {
-      citas = await this.repository.buscarCitasFecha(cedula, new Date(fecha));
+      // SOLUCIÓN ZONA HORARIA: 
+      // Separar el string y construir la fecha localmente para ignorar el UTC por defecto
+      const [y, m, d] = fecha.split('-').map(Number);
+      const fechaObj = new Date(y, m - 1, d);
+      
+      citas = await this.repository.buscarCitasFecha(cedula, fechaObj);
     } else {
       throw new Error("Debes enviar fecha o rango (fechaInicio y fechaFin)");
     }

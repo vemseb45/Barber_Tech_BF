@@ -1,21 +1,19 @@
 'use client';
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Calendar, Clock, User, CheckCircle2, XCircle, Coffee, AlertTriangle, Scissors, Hash } from "lucide-react";
+import { Calendar, Clock, User, CheckCircle2, XCircle, Coffee, AlertTriangle, Scissors } from "lucide-react";
 import { jwtDecode } from "jwt-decode";
 
 interface Cita {
   id: number;
   cedula_cliente_id: string;
+  cliente_nombre: string;
   fecha: string;
   hora: string;
+  hora_formateada: string;
   id_servicio: number;
-  nombre_servicio?: string;
-  estado?: string;
-}
-
-interface JwtPayload {
-  user_id: string;
+  nombre_servicio: string;
+  estado: string;
 }
 
 export default function ViewCitas() {
@@ -24,33 +22,101 @@ export default function ViewCitas() {
   const [cargando, setCargando] = useState<boolean>(false);
   const [miIdBarbero, setMiIdBarbero] = useState<string | null>(null);
 
+  // 1. OBTENER Y DECODIFICAR EL TOKEN AL MONTAR EL COMPONENTE
   useEffect(() => {
+    console.log("🔍 [1] Componente montado. Buscando token en localStorage...");
     const token = localStorage.getItem("token");
-    if (!token) return;
+
+    if (!token) {
+      console.error("❌ [1.1] No se encontró ningún 'token' en el localStorage. Revisa cómo lo estás guardando al iniciar sesión.");
+      return;
+    }
 
     try {
-      const decoded = jwtDecode<JwtPayload>(token);
-      if (decoded.user_id) {
-        setMiIdBarbero(String(decoded.user_id));
+      const decoded: any = jwtDecode(token);
+      console.log("📦 [1.2] Token decodificado correctamente. Contenido del payload:", decoded);
+
+      // Intentamos leer el ID desde las propiedades más comunes en payloads JWT
+      const idDetectado = decoded.user_id || decoded.id || decoded.sub || decoded.cedula;
+
+      if (idDetectado) {
+        console.log(`✅ [1.3] ID del barbero detectado con éxito: ${idDetectado}`);
+        setMiIdBarbero(String(idDetectado));
+      } else {
+        console.warn("⚠️ [1.4] El token existe pero no contiene las propiedades 'user_id', 'id', 'sub' ni 'cedula'. Revisa la estructura de tu JWT.");
       }
     } catch (error) {
-      console.error("Error decodificando token");
+      console.error("❌ [1.5] Error crítico al decodificar el token JWT:", error);
     }
   }, []);
+
+  useEffect(() => {
+    console.log(`🔄 [2] useEffect de carga disparado. BarberoID actual: '${miIdBarbero}', Fecha Filtro: '${fechaFiltro}'`);
+
+    const cargarAgenda = async () => {
+      if (!miIdBarbero) {
+        console.warn("⏳ [2.1] Esperando a que se establezca miIdBarbero antes de disparar el fetch...");
+        return;
+      }
+
+      setCargando(true);
+      const token = localStorage.getItem("token");
+
+      const urlApi = `/api/agenda/miAgenda?barberoId=${miIdBarbero}&fecha=${fechaFiltro}`;
+      console.log(`🚀 [2.2] Enviando petición HTTP FETCH a: ${urlApi}`);
+
+      try {
+        const res = await fetch(urlApi, {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Cache-Control": "no-cache",
+            "Pragma": "no-cache"
+          },
+          cache: "no-store"
+        });
+
+        console.log(`📡 [2.3] Respuesta recibida del servidor. Status Code: ${res.status}`);
+        const response = await res.json();
+        console.log("📊 [2.4] Datos parseados de la respuesta de la API:", response);
+
+        let citas: Cita[] = [];
+        if (response.success && Array.isArray(response.data)) {
+          citas = response.data;
+        } else if (Array.isArray(response)) {
+          citas = response;
+        }
+
+        console.log(`✨ [2.5] Total de citas mapeadas en estado: ${citas.length}`);
+        setCitasDelDia(citas);
+      } catch (error) {
+        console.error("❌ [2.6] Error de conexión o de red al intentar ejecutar el fetch:", error);
+        setCitasDelDia([]);
+      } finally {
+        setCargando(false);
+      }
+    };
+
+    cargarAgenda();
+  }, [fechaFiltro, miIdBarbero]);
 
   const handleFinalizar = async (id: number) => {
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch(`/api/cita/finalizar`, {
+      // La URL ahora es estática: /api/citas/finalizar
+      const res = await fetch(`/api/citas/finalizar`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
-        }
+        },
+        // Enviamos el ID en el body
+        body: JSON.stringify({ id })
       });
+
       const data = await res.json();
       if (!res.ok) {
-        alert("Error: " + (data.message || "No se pudo finalizar"));
+        alert("Error: " + (data.message || "No se pudo finalizar la cita"));
         return;
       }
       setCitasDelDia(prev => prev.filter(c => c.id !== id));
@@ -60,21 +126,20 @@ export default function ViewCitas() {
   };
 
   const handleCancelar = async (id: number) => {
-    if (!window.confirm("¿Estás seguro de que deseas cancelar esta cita? Esta acción no se puede deshacer.")) {
-      return;
-    }
+    if (!window.confirm("¿Estás seguro de que deseas cancelar esta cita?")) return;
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch(`/api/cita/cancelar`, {
+      const res = await fetch(`/api/citas/cancelar`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
-        }
+        },
+        body: JSON.stringify({ id })
       });
       const data = await res.json();
       if (!res.ok) {
-        alert("Error: " + (data.message || "No se pudo cancelar"));
+        alert("Error: " + (data.message || "No se pudo cancelar la cita"));
         return;
       }
       setCitasDelDia(prev => prev.filter(c => c.id !== id));
@@ -83,27 +148,9 @@ export default function ViewCitas() {
     }
   };
 
-  useEffect(() => {
-    if (!miIdBarbero) return;
-    setCargando(true);
-    fetch(`/api/agenda/miAgenda/`)
-      .then(res => res.json())
-      .then(response => {
-        let citas: Cita[] = [];
-        if (response.success && Array.isArray(response.data)) {
-          citas = response.data;
-        } else if (Array.isArray(response)) {
-          citas = response;
-        }
-        setCitasDelDia(citas);
-      })
-      .catch(() => setCitasDelDia([]))
-      .finally(() => setCargando(false));
-  }, [fechaFiltro, miIdBarbero]);
-
   return (
     <div className="max-w-6xl mx-auto space-y-6 p-2 sm:p-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      
+
       {/* HEADER DE AGENDA */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white dark:bg-slate-900 p-6 sm:p-10 rounded-[40px] border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none">
         <div className="flex items-center gap-5">
@@ -148,7 +195,7 @@ export default function ViewCitas() {
             <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Actualizando servicios...</p>
           </div>
         ) : citasDelDia.length === 0 ? (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="text-center py-24 bg-slate-50 dark:bg-slate-900/50 rounded-[50px] border-2 border-dashed border-slate-200 dark:border-slate-800"
@@ -163,7 +210,7 @@ export default function ViewCitas() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <AnimatePresence mode="popLayout">
               {citasDelDia.map((cita, index) => (
-                <motion.div 
+                <motion.div
                   key={cita.id}
                   layout
                   initial={{ opacity: 0, y: 20 }}
@@ -180,7 +227,9 @@ export default function ViewCitas() {
                           <Clock size={24} />
                         </div>
                         <div>
-                          <p className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter">{cita.hora}</p>
+                          <p className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter">
+                            {cita.hora_formateada || cita.hora}
+                          </p>
                           <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Horario</span>
                         </div>
                       </div>
@@ -196,8 +245,9 @@ export default function ViewCitas() {
                           <User size={18} />
                         </div>
                         <div>
-                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Cédula Cliente</p>
-                          <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{cita.cedula_cliente_id}</p>
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Cliente</p>
+                          <p className="text-sm font-bold text-slate-800 dark:text-slate-200 capitalize">{cita.cliente_nombre || "Desconocido"}</p>
+                          <p className="text-[11px] text-slate-400 font-medium">C.C. {cita.cedula_cliente_id}</p>
                         </div>
                       </div>
 
@@ -207,12 +257,12 @@ export default function ViewCitas() {
                         </div>
                         <div>
                           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Servicio</p>
-                          <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{cita.nombre_servicio || `Ref: #${cita.id_servicio}`}</p>
+                          <p className="text-sm font-bold text-slate-800 dark:text-slate-200 capitalize">{cita.nombre_servicio || `Ref: #${cita.id_servicio}`}</p>
                         </div>
                       </div>
                     </div>
 
-                    {/* ACCIONES FINALIZAR / CANCELAR */}
+                    {/* ACCIONES */}
                     <div className="grid grid-cols-2 gap-4">
                       <motion.button
                         whileHover={{ y: -2 }}
