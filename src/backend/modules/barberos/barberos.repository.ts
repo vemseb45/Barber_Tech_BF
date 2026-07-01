@@ -1,5 +1,5 @@
 import { prisma } from "@/backend/shared/prisma";
-import { CreateBarberoDTO } from "./dto/barbero.dto";
+import { CreateBarberoDTO } from "./dto/barbero.dto"; // Ajusta al nombre de tu type/dto
 
 export class BarberosRepository {
   /**
@@ -28,7 +28,7 @@ export class BarberosRepository {
   /**
    * Ejecuta la transacción atómica: Crea el Usuario + el Detalle del Barbero.
    */
-  static async create(data: CreateBarberoDTO, passwordHash: string) {
+  static async create(data: CreateBarberoDTO, passwordHash: string, imagenBuffer: Buffer | null) {
     return prisma.$transaction(async (tx) => {
       
       const usuario = await tx.usuario.create({
@@ -39,6 +39,7 @@ export class BarberosRepository {
           telefono: data.telefono,
           email: data.email,
           contrasena: passwordHash,
+          imagen: imagenBuffer, // Se integra el buffer de la imagen
           rol: "Barbero", 
           estado: "Activo"
         }

@@ -1,10 +1,12 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { UserPlus, Search, Scissors, Calendar, Trash2, MoreVertical } from 'lucide-react';
+import { UserPlus, Search, Scissors, Calendar, Trash2, MoreVertical, Camera } from 'lucide-react';
 import type { Usuario } from '@/frontend/types/types_admin';
 import ModalAsignarHorario from '@/frontend/modules/admin/components/ModalAsignarHorario';
 import CargaMasivaHorarios from '@/frontend/modules/admin/components/CargaMasivaHorarios';
 import CrearBarbero from '@/frontend/modules/admin/components/CrearBarbero';
+import { SubirImagenBarbero } from '@/frontend/modules/admin/components/SubirImagenBarbero'; // Ajusta la ruta según donde lo hayas guardado
+
 
 const ViewBarberos: React.FC = () => {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
@@ -70,6 +72,12 @@ const ViewBarberos: React.FC = () => {
     setModalOpen(true);
   };
 
+  // Función temporal para manejar el click de la imagen
+  const handleSubirImagen = (cedula: string | undefined) => {
+    alert(`Lógica para subir imagen del barbero con cédula: ${cedula}`);
+    // Aquí puedes abrir tu modal de imagen o disparar un input type="file"
+  };
+
   // Corrección 1: Validación segura en el filtro
   const barberosFiltrados = usuarios.filter(u => {
     const nombre = u.nombre || '';
@@ -131,9 +139,7 @@ const ViewBarberos: React.FC = () => {
               ) : barberosFiltrados.length === 0 ? (
                 <tr><td colSpan={3} className="px-8 py-20 text-center text-slate-400">No hay barberos activos.</td></tr>
               ) : (
-                // 1. Agregamos "index" para usarlo como key de emergencia si no hay id ni cédula
                 barberosFiltrados.map((user, index) => (
-                  // 2. Usamos user.id como key principal, ya que siempre es único
                   <tr key={user.id || index} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/30 transition-all">
                     <td className="px-8 py-6">
                       <div className="flex items-center gap-4">
@@ -158,17 +164,21 @@ const ViewBarberos: React.FC = () => {
                     <td className="px-8 py-6">
                       <div className="flex justify-center gap-3">
                         <button
-                          // 3. Si no hay cédula, pasamos el ID o un string vacío para que TypeScript no arroje error
                           onClick={() => abrirModalHorario(user.cedula || user.id, `${user.nombre || ''} ${user.apellidos || (user as any).apellido || ''}`.trim() || 'Barbero')}
                           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-[11px] font-black shadow-md hover:bg-blue-700 transition-all"
                         >
                           <Calendar size={14} /> HORARIOS
                         </button>
+
+                        {/* Reemplazamos el botón anterior por el componente funcional */}
+                        <SubirImagenBarbero
+                          cedula={user.cedula || String(user.id)}
+                          onSuccess={cargarUsuarios}
+                        />
+
                         <button
-                          // 4. Aseguramos que se envíe un string a handleCambiarRol usando String() o enviando la cédula directamente
                           onClick={() => handleCambiarRol(user.cedula || String(user.id), 'Cliente')}
                           className="p-2.5 bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-red-500 rounded-xl transition-all"
-                          title="Quitar de equipo"
                         >
                           <Trash2 size={18} />
                         </button>
@@ -186,7 +196,6 @@ const ViewBarberos: React.FC = () => {
         <ModalAsignarHorario
           isOpen={modalOpen}
           onClose={() => { setModalOpen(false); setBarberoSeleccionado(null); }}
-          // Pasamos el ID forzado como number si tu Modal lo requiere estrictamente así
           barberoId={barberoSeleccionado.id as number}
           nombreBarbero={barberoSeleccionado.nombre}
         />

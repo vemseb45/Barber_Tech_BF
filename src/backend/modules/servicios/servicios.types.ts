@@ -3,7 +3,7 @@ export interface CreateServicioDTO {
   descripcion?: string;
   precio: number;
   duracion_minutos: number;
-  imagen?: string;
+  imagen?: Buffer | null; 
   id_barberia: number;
 }
 

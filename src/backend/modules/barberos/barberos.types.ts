@@ -11,4 +11,5 @@ export type CreateBarberoInput = {
   email: string;
   contrasena: string;
   id_barberia: number;
+  imagen?: string | null; 
 };

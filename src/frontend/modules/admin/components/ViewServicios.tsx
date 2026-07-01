@@ -116,13 +116,18 @@ export default function ViewServicios() {
     try {
       const token = localStorage.getItem("token");
 
-      const body = {
-        nombre: formData.nombre,
-        descripcion: formData.descripcion,
-        precio: Number(formData.precio),
-        duracion_minutos: Number(formData.duracion_minutos),
-        id_barberia: Number(formData.barberia)
-      };
+      // 1. Usar FormData en lugar de JSON
+      const formDataToSend = new FormData();
+      formDataToSend.append('nombre', formData.nombre);
+      formDataToSend.append('descripcion', formData.descripcion);
+      formDataToSend.append('precio', formData.precio);
+      formDataToSend.append('duracion_minutos', formData.duracion_minutos);
+      formDataToSend.append('id_barberia', formData.barberia);
+
+      // Adjuntar la imagen si el usuario seleccionó una
+      if (imagenFile) {
+        formDataToSend.append('imagen', imagenFile);
+      }
 
       const url = editingService
         ? `/api/servicios/${editingService.id_servicio}`
@@ -131,15 +136,14 @@ export default function ViewServicios() {
       const res = await fetch(url, {
         method: editingService ? 'PUT' : 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          // MUY IMPORTANTE: NO establezcas 'Content-Type' aquí. 
+          // El navegador lo asignará automáticamente con el "boundary" correcto para FormData.
           ...(token ? { Authorization: `Bearer ${token}` } : {})
         },
-        body: JSON.stringify(body)
+        body: formDataToSend // Enviar el FormData directamente
       });
 
       const data = await res.json();
-      console.log(data);
-
       if (!res.ok) throw new Error(data.message);
 
       await fetchDatos();
@@ -220,7 +224,11 @@ export default function ViewServicios() {
               {/* CONTENEDOR DE IMAGEN */}
               <div className="h-56 relative overflow-hidden bg-slate-100 dark:bg-slate-800 flex items-center justify-center group-hover:scale-105 transition-transform duration-700">
                 {servicio.imagen ? (
-                  <img src={servicio.imagen.startsWith('http') ? servicio.imagen : `http://127.0.0.1:8000${servicio.imagen}`} alt={servicio.nombre} className="w-full h-full object-cover" />
+                  <img
+                    src={`data:image/jpeg;base64,${servicio.imagen}`}
+                    alt={servicio.nombre}
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
                   <Sparkles className="text-slate-300 dark:text-slate-600 w-24 h-24 absolute opacity-20" />
                 )}

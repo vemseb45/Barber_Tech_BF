@@ -41,21 +41,30 @@ export class ServiciosController {
     try {
       const user = await getSessionUser();
       if (!user) return apiResponse(false, "No autenticado", null, 401);
-      if (user.rol !== "Admin") return apiResponse(false, "No autorizado. Se requiere rol Admin.", null, 403);
+      if (user.rol !== "Admin") return apiResponse(false, "No autorizado.", null, 403);
 
-      const body = await req.json();
+      // 1. LEER FORMDATA EN LUGAR DE JSON
+      const formData = await req.formData();
       
-      // Validación con Zod
-      const validation = createServicioSchema.safeParse(body);
-      if (!validation.success) {
-        return apiResponse(false, "Errores de validación", validation.error.format(), 400);
-      }
+      // 2. EXTRAER DATOS
+      const data: any = {
+        nombre: formData.get('nombre') as string,
+        descripcion: formData.get('descripcion') as string,
+        precio: Number(formData.get('precio')),
+        duracion_minutos: Number(formData.get('duracion_minutos')),
+        id_barberia: Number(formData.get('id_barberia')),
+      };
 
-      const nuevoServicio = await ServiciosService.createServicio(validation.data);
+      // 3. EXTRAER Y CONVERTIR LA IMAGEN A BUFFER
+      const imagenFile = formData.get('imagen') as File | null;
+      if (imagenFile && imagenFile.size > 0) {
+        const arrayBuffer = await imagenFile.arrayBuffer();
+        data.imagen = Buffer.from(arrayBuffer);
+      }
+      const nuevoServicio = await ServiciosService.createServicio(data);
       return apiResponse(true, "Servicio creado correctamente", nuevoServicio, 201);
     } catch (error: any) {
-      const status = error.message.includes("no existe") ? 400 : 500;
-      return apiResponse(false, error.message, null, status);
+      return apiResponse(false, error.message, null, 500);
     }
   }
 
@@ -63,20 +72,27 @@ export class ServiciosController {
     try {
       const user = await getSessionUser();
       if (!user) return apiResponse(false, "No autenticado", null, 401);
-      if (user.rol !== "Admin") return apiResponse(false, "No autorizado. Se requiere rol Admin.", null, 403);
+      if (user.rol !== "Admin") return apiResponse(false, "No autorizado.", null, 403);
 
-      const body = await req.json();
-      const validation = updateServicioSchema.safeParse(body);
-      
-      if (!validation.success) {
-        return apiResponse(false, "Errores de validación", validation.error.format(), 400);
+      const formData = await req.formData();
+      const data: any = {};
+
+      if (formData.has('nombre')) data.nombre = formData.get('nombre') as string;
+      if (formData.has('descripcion')) data.descripcion = formData.get('descripcion') as string;
+      if (formData.has('precio')) data.precio = Number(formData.get('precio'));
+      if (formData.has('duracion_minutos')) data.duracion_minutos = Number(formData.get('duracion_minutos'));
+      if (formData.has('id_barberia')) data.id_barberia = Number(formData.get('id_barberia'));
+
+      const imagenFile = formData.get('imagen') as File | null;
+      if (imagenFile && imagenFile.size > 0) {
+        const arrayBuffer = await imagenFile.arrayBuffer();
+        data.imagen = Buffer.from(arrayBuffer);
       }
 
-      const servicioActualizado = await ServiciosService.updateServicio(id, validation.data);
-      return apiResponse(true, "Servicio actualizado correctamente", servicioActualizado, 200);
+      const servicioActualizado = await ServiciosService.updateServicio(id, data);
+      return apiResponse(true, "Servicio actualizado", servicioActualizado, 200);
     } catch (error: any) {
-      const status = error.message.includes("no existe") ? 404 : 500;
-      return apiResponse(false, error.message, null, status);
+      return apiResponse(false, error.message, null, 500);
     }
   }
 

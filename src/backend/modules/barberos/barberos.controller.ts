@@ -8,7 +8,6 @@ export class BarberosController {
   
   /**
    * [GET] Listar Barberos
-   * Cualquier usuario logueado en la plataforma puede ver los barberos.
    */
   static async listarBarberosController(req: NextRequest) {
     try {
@@ -26,7 +25,6 @@ export class BarberosController {
 
   /**
    * [POST] Crear Barbero
-   * Regla estricta: Solo el rol Admin tiene autorización.
    */
   static async crearBarberoController(req: NextRequest) {
     try {
@@ -51,7 +49,8 @@ export class BarberosController {
 
       const nuevoBarbero = await BarberosService.createBarbero(validacion.data);
       
-      const { contrasena, ...barberoSeguro } = nuevoBarbero;
+      // Excluimos la contraseña y la imagen pura para aligerar el payload de respuesta
+      const { contrasena, imagen, ...barberoSeguro } = nuevoBarbero;
 
       return apiResponse(true, "Barbero creado exitosamente", barberoSeguro, 201);
     } catch (error: any) {

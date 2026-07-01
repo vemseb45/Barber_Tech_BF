@@ -85,6 +85,7 @@ model Usuario {
   telefono       String        @unique @db.VarChar(20)
   email          String        @unique @db.VarChar(100)
   contrasena     String        @db.VarChar(255)
+  imagen         Bytes?
   rol            RolUsuario    @default(Cliente)
   estado         EstadoUsuario @default(Activo)
   fecha_registro DateTime?     @default(now()) @db.Timestamp(6)
@@ -134,7 +135,7 @@ model Servicio {
   descripcion      String? @db.VarChar(255)
   precio           Decimal @db.Decimal(10, 2)
   duracion_minutos Int
-  imagen           String? @db.VarChar(255) // Añadido desde tu modelo de Django
+  imagen           Bytes?
   id_barberia      Int?
 
   // Relaciones

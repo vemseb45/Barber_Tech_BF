@@ -12,8 +12,13 @@ export class BarberosService {
     // y entregar al front exactamente la interfaz que necesita.
     return barberosRaw.map((user) => ({
       id: user.cedula,
+      cedula: user.cedula, // Añadido para consistencia con tu frontend
+      nombre: user.nombre, // Añadido para consistencia con tu frontend
+      apellidos: user.apellidos, // Añadido para consistencia con tu frontend
       username: `${user.nombre} ${user.apellidos}`.trim(),
-      especialidad: user.detalle_barbero?.barberia?.nombre || "Barbero"
+      especialidad: user.detalle_barbero?.barberia?.nombre || "Barbero",
+      // Convertimos el Buffer a Base64 si existe
+      imagen: user.imagen ? user.imagen.toString('base64') : null 
     }));
   }
 
@@ -43,7 +48,10 @@ export class BarberosService {
     }
 
     const passwordHash = await hashPassword(data.contrasena);
+    
+    // Transformamos el string Base64 a Buffer para Prisma
+    const imagenBuffer = data.imagen ? Buffer.from(data.imagen, 'base64') : null;
 
-    return await BarberosRepository.create(data, passwordHash);
+    return await BarberosRepository.create(data, passwordHash, imagenBuffer);
   }
 }
