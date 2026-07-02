@@ -239,9 +239,13 @@ export default function AgendaCitasCliente() {
         setIsSubmitting(false);
         return;
       }
+      if (responseData.url_pago) {
+        window.location.href = responseData.url_pago;
+      } else {
+        alert("¡Cita agendada con éxito!");
+        window.location.reload();
+      }
 
-      alert("¡Cita agendada con éxito!");
-      window.location.reload();
     } catch (error) {
       alert("Error al conectar con el servidor.");
       setIsSubmitting(false);

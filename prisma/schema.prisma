@@ -42,6 +42,12 @@ enum EstadoPago {
   @@map("estado_pago_enum")
 }
 
+enum TipoPago {
+  Anticipo
+  Liquidacion
+  @@map("tipo_pago_enum")
+}
+
 enum DiaSemana {
   Lunes
   Martes
@@ -206,11 +212,11 @@ model Pago {
   id_cita            Int
   valor              Decimal    @db.Decimal(10, 2)
   metodo_pago        MetodoPago
+  tipo_pago          TipoPago   @default(Anticipo)
   referencia_externa String?    @db.VarChar(255)
   estado             EstadoPago @default(Pendiente)
   fecha_pago         DateTime?  @default(now()) @db.Timestamp(6)
 
-  // Relaciones
   cita Cita @relation(fields: [id_cita], references: [id_cita], onDelete: Cascade)
 
   @@index([estado])

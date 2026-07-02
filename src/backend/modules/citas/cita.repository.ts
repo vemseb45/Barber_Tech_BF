@@ -1,4 +1,5 @@
 import { prisma } from '@/backend/shared/prisma';
+import { EstadoPago } from '@prisma/client';
 
 export class CitaRepository {
   // Guardar una nueva cita en la base de datos
@@ -20,6 +21,22 @@ export class CitaRepository {
       }
     });
   }
+  async buscarServicioPorId(id_servicio: number) {
+    return prisma.servicio.findUnique({ where: { id_servicio } });
+  }
+
+  async buscarCitaConSaldos(cedula_cliente: string) {
+    return prisma.cita.findMany({
+      where: { cedula_cliente, estado: 'CONF' },
+      include: {
+        servicio: true,
+        barbero: true,
+        pagos: { where: { estado: EstadoPago.Aprobado } }
+      },
+      orderBy: { fecha: 'asc' }
+    });
+  }
+
 
   // Buscar una cita específica por su ID
   async buscarPorId(id_cita: number) {

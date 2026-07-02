@@ -1,26 +1,58 @@
 import { CitaRepository } from './cita.repository';
+import { PagosService } from '../pagos/pagos.service';
 
 export class CitaService {
   private repository = new CitaRepository();
+  private pagosService = new PagosService();
 
   async reservar(body: any) {
     if (!body.fecha || !body.hora || !body.servicio || !body.cedula_cliente || !body.cedula_barbero) {
       throw new Error("Todos los campos son obligatorios");
     }
 
-    const fecha = new Date(`${body.fecha}T00:00:00`);
+    const servicioInfo = await this.repository.buscarServicioPorId(parseInt(body.servicio));
+    if (!servicioInfo) throw new Error("El servicio seleccionado no existe.");
 
-    // Extraemos solo los primeros 5 caracteres (HH:mm) para asegurarnos de que el formato no falle
+    const fecha = new Date(`${body.fecha}T00:00:00`);
     const horaString = body.hora.substring(0, 5);
     const hora = new Date(`1970-01-01T${horaString}:00Z`);
-    return this.repository.crear({
-      fecha,
-      hora,
-      id_servicio: parseInt(body.servicio),
-      cedula_cliente: body.cedula_cliente,
-      cedula_barbero: body.cedula_barbero
+
+    const nuevaCita = await this.repository.crear({
+      fecha, hora, id_servicio: parseInt(body.servicio),
+      cedula_cliente: body.cedula_cliente, cedula_barbero: body.cedula_barbero
+    });
+
+    const urlPago = await this.pagosService.generarLinkAnticipo(
+      nuevaCita.id_cita,
+      Number(servicioInfo.precio),
+      servicioInfo.nombre
+    );
+
+    return {
+      mensaje: "Cita pre-reservada. Completar pago para confirmar.",
+      id_cita: nuevaCita.id_cita,
+      url_pago: urlPago
+    };
+  }
+
+  async obtenerCitasPOS(cedula_cliente: string) {
+    const citas = await this.repository.buscarCitaConSaldos(cedula_cliente);
+
+    return citas.map(cita => {
+      const precioTotal = Number(cita.servicio?.precio || 0);
+      const totalPagado = cita.pagos.reduce((sum, pago) => sum + Number(pago.valor), 0);
+      return {
+        id_cita: cita.id_cita,
+        fecha: cita.fecha.toISOString().split('T')[0],
+        servicio: cita.servicio?.nombre,
+        precio_total: precioTotal,
+        total_pagado_anticipo: totalPagado,
+        saldo_a_cobrar: precioTotal - totalPagado,
+        barbero: `${cita.barbero?.nombre} ${cita.barbero?.apellidos}`.trim()
+      };
     });
   }
+
 
   async finalizar(citaId: number) {
     const cita = await this.repository.buscarPorId(citaId);
