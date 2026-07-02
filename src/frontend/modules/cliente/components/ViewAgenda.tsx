@@ -1,9 +1,9 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { jwtDecode } from 'jwt-decode';
-import { CalendarDays, ChevronLeft, ChevronRight, Clock, Scissors, User } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Clock, Scissors, User, CreditCard } from "lucide-react";
 import Calendario from "@/frontend/modules/cliente/components/Calendario";
 import type { Bloque } from "@/frontend/modules/cliente/components/Calendario";
 
@@ -41,6 +41,11 @@ export default function AgendaCitasCliente() {
   const [bloquesDisponibles, setBloquesDisponibles] = useState<Bloque[]>([]);
   const [cedulaCliente, setCedulaCliente] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Estados para el Modal de Redirección a Pago
+  const [showPaymentPopup, setShowPaymentPopup] = useState(false);
+  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState(7);
 
   // Referencias y estados para el carrusel de Barberos
   const barberosRef = useRef<HTMLDivElement>(null);
@@ -157,10 +162,22 @@ export default function AgendaCitasCliente() {
     fetchDisponibilidad();
   }, [barberoSeleccionado, fechaSeleccionada, servicioSeleccionado]);
 
-  // SOLUCIÓN AL ERROR DE REFERENCIAS: Funciones específicas para cada carrusel
+  // Lógica del Temporizador para redirección a Bold
+  useEffect(() => {
+    if (showPaymentPopup && paymentUrl) {
+      if (countdown > 0) {
+        const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+        return () => clearTimeout(timer);
+      } else {
+        // Redirigir al llegar a 0
+        window.location.href = paymentUrl;
+      }
+    }
+  }, [showPaymentPopup, paymentUrl, countdown]);
+
   const scrollBarberos = (direccion: "izq" | "der") => {
     if (barberosRef.current) {
-      const cantidad = 260; // Ancho aproximado de la tarjeta
+      const cantidad = 260;
       barberosRef.current.scrollBy({ left: direccion === "izq" ? -cantidad : cantidad, behavior: "smooth" });
     }
   };
@@ -172,7 +189,6 @@ export default function AgendaCitasCliente() {
     }
   };
 
-  // Efecto Auto-scroll Barberos
   useEffect(() => {
     if (pausarBarberos || barberos.length <= 1) return;
     const intervalo = setInterval(() => {
@@ -188,7 +204,6 @@ export default function AgendaCitasCliente() {
     return () => clearInterval(intervalo);
   }, [pausarBarberos, barberos.length]);
 
-  // Efecto Auto-scroll Servicios
   useEffect(() => {
     if (pausarServicios || servicios.length <= 1 || !barberoSeleccionado) return;
     const intervalo = setInterval(() => {
@@ -239,8 +254,11 @@ export default function AgendaCitasCliente() {
         setIsSubmitting(false);
         return;
       }
+
       if (responseData.url_pago) {
-        window.location.href = responseData.url_pago;
+        // En lugar de redirigir de golpe, mostramos el modal y guardamos la URL
+        setPaymentUrl(responseData.url_pago);
+        setShowPaymentPopup(true);
       } else {
         alert("¡Cita agendada con éxito!");
         window.location.reload();
@@ -274,7 +292,55 @@ export default function AgendaCitasCliente() {
   };
 
   return (
-    <div className="landing-page py-12 px-4 sm:px-6 flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-[#0B1120]">
+    <div className="landing-page py-12 px-4 sm:px-6 flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-[#0B1120] relative">
+      
+      {/* ================= MODAL DE PAGO (POPUP) ================= */}
+      <AnimatePresence>
+        {showPaymentPopup && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-2xl max-w-md w-full border border-slate-200 dark:border-slate-800 text-center relative overflow-hidden"
+            >
+               {/* Decoración de fondo */}
+               <div className="absolute -top-20 -right-20 w-40 h-40 bg-primary/10 rounded-full blur-3xl"></div>
+               
+               <div className="relative z-10">
+                 <div className="w-20 h-20 bg-orange-100 dark:bg-orange-500/20 text-orange-500 rounded-full flex items-center justify-center mx-auto mb-6 ring-4 ring-white dark:ring-slate-900">
+                    <CreditCard size={36} strokeWidth={2.5} />
+                 </div>
+                 
+                 <h3 className="text-2xl font-black text-slate-800 dark:text-white mb-2">¡Casi listo!</h3>
+                 
+                 <p className="text-slate-600 dark:text-slate-300 font-medium mb-6 leading-relaxed text-sm sm:text-base">
+                    Para confirmar tu cita debes cancelar un <strong className="text-orange-500 dark:text-orange-400">anticipo del 20%</strong> del servicio. El monto restante lo cancelarás directamente en nuestra barbería.
+                 </p>
+                 
+                 <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 mb-6 border border-slate-100 dark:border-slate-700">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest mb-1">
+                      Serás redirigido al pago en:
+                    </p>
+                    <div className="text-5xl font-black text-primary flex items-center justify-center gap-2">
+                       {countdown} <span className="text-xl text-slate-400">s</span>
+                    </div>
+                 </div>
+                 
+                 <button
+                    onClick={() => {
+                      if (paymentUrl) window.location.href = paymentUrl;
+                    }}
+                    className="w-full py-4 bg-primary text-white rounded-xl font-bold hover:bg-primary/90 transition-all flex justify-center items-center gap-2 shadow-lg shadow-primary/20 active:scale-95"
+                 >
+                    Ir a Pagar Ahora <ChevronRight size={18} />
+                 </button>
+               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <div className="w-full max-w-4xl p-6 sm:p-10 bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl border border-slate-200 dark:border-white/5">
         <h2 className="text-3xl font-black text-center mb-10 text-slate-900 dark:text-white tracking-tight">
           Reserva tu cita

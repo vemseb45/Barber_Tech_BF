@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import "@/app/global.css";
 
-// Puedes modificar estos textos a tu gusto para mejorar el SEO
 export const metadata: Metadata = {
-  title: "BarberTech | Estilo y Personalidad",
+  title: "Barber Tech",
   description: "Tu mejor versión comienza aquí. Reserva tu cita en la mejor barbería de la ciudad.",
+  icons:{
+    icon:"/Recurso 1.png",
+
+  },
 };
 
 export default function RootLayout({

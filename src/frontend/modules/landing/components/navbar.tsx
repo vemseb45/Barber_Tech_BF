@@ -30,7 +30,7 @@ export default function Navbar({ isDarkMode, toggleTheme }: NavbarProps) {
         {/* Logo */}
         <motion.div variants={dropDownVariant} initial="hidden" animate="visible" className="flex items-center shrink-0">
           <img 
-            src="/Imagenes/Recurso 1.png" 
+            src="/Recurso 1.png" 
             alt="BarberTech Logo" 
             className="w-14 h-14 sm:w-24 sm:h-18 object-contain drop-shadow-lg" 
           />
