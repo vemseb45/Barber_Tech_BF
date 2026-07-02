@@ -35,7 +35,7 @@ export default function Contact() {
 
           {/* Mapa / Gráfico */}
           <motion.div variants={scaleUpVariant} className="h-[300px] sm:h-[400px] overflow-hidden rounded-[32px] bg-slate-200 shadow-2xl border-4 border-white dark:border-white/10 relative group">
-            <div className="absolute inset-0 grayscale opacity-40 bg-cover bg-center" style={{ backgroundImage: "url('/Imagenes/fondobt.png')" }}></div>
+            <div className="absolute inset-0 grayscale opacity-40 bg-cover bg-center" style={{ backgroundImage: "url('/Imagenes/Imagen de error.png')" }}></div>
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="p-6 bg-white dark:bg-[#1a1a24] rounded-2xl shadow-2xl text-center border border-black/5 dark:border-white/10 mx-4">
                 <img src="/Imagenes/ubicacion.png" alt="Ubicación" className="w-8 h-8 object-contain mx-auto mb-2" />
