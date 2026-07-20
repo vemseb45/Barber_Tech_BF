@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CalendarDays, Clock, User, Timer, AlertCircle, CheckCircle2, XCircle } from "lucide-react";
+import { CalendarDays, Clock, User, Timer, AlertCircle, CheckCircle2, XCircle, CalendarClock } from "lucide-react";
 
 interface CitaPendiente {
   id: number;
@@ -13,12 +13,19 @@ interface CitaPendiente {
   servicio_precio?: string | number;
   barbero_nombre?: string;
   url_pago?: string;
+  cedula_barbero?: string; // Útil si la API lo requiere
 }
 
 export default function ViewPendientes() {
   const [citas, setCitas] = useState<CitaPendiente[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // ================= ESTADOS DEL MODAL =================
+  const [citaAReagendar, setCitaAReagendar] = useState<CitaPendiente | null>(null);
+  const [nuevaFecha, setNuevaFecha] = useState("");
+  const [nuevaHora, setNuevaHora] = useState("");
+  const [loadingReagendar, setLoadingReagendar] = useState(false);
 
   useEffect(() => {
     const fetchCitas = async () => {
@@ -35,7 +42,6 @@ export default function ViewPendientes() {
         if (!res.ok) throw new Error("Error al obtener las citas pendientes");
         const data = await res.json();
         
-        // Adaptabilidad por si tu API devuelve data.data o un array directo
         const listaCitas = Array.isArray(data) ? data : (data.data || []);
         setCitas(listaCitas);
       } catch (err: any) {
@@ -54,7 +60,7 @@ export default function ViewPendientes() {
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(`/api/citas/cancelar`, {
-        method: "POST", // o DELETE, según cómo tengas tu API
+        method: "PATCH", 
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -63,7 +69,6 @@ export default function ViewPendientes() {
       });
 
       if (res.ok) {
-        // Filtramos la cita cancelada de la vista
         setCitas(prev => prev.filter(c => (c.id || c.id_cita) !== idCita));
         alert("Cita cancelada exitosamente");
       } else {
@@ -75,8 +80,65 @@ export default function ViewPendientes() {
     }
   };
 
+  // ================= LÓGICA DE REAGENDAR =================
+  const abrirModalReagendar = (cita: CitaPendiente) => {
+    setCitaAReagendar(cita);
+    setNuevaFecha(cita.fecha.split("T")[0]); // Ajusta si la fecha viene con timezones
+    
+    // Extraemos solo HH:mm para el input type="time"
+    const horaLimpia = cita.hora.length > 5 ? cita.hora.substring(0, 5) : cita.hora;
+    setNuevaHora(horaLimpia);
+  };
+
+  const submitReagendar = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!citaAReagendar) return;
+
+    setLoadingReagendar(true);
+    const idCita = citaAReagendar.id || citaAReagendar.id_cita;
+
+    // Prisma espera el formato de hora HH:mm:ss
+    const horaFormateada = nuevaHora.length === 5 ? `${nuevaHora}:00` : nuevaHora;
+
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/citas/reagendar`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          id_cita: idCita,
+          nueva_fecha: nuevaFecha,
+          nueva_hora: horaFormateada,
+        })
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        // Actualizamos la cita en el estado local para reflejar el cambio inmediato
+        setCitas(prev => prev.map(c => 
+          (c.id === idCita || c.id_cita === idCita) 
+            ? { ...c, fecha: nuevaFecha, hora: nuevaHora } 
+            : c
+        ));
+        alert("Cita reagendada exitosamente");
+        setCitaAReagendar(null); // Cerramos modal
+      } else {
+        alert(data.message || "Error al reagendar la cita");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Error de conexión al reagendar");
+    } finally {
+      setLoadingReagendar(false);
+    }
+  };
+
   return (
-    <div className="max-w-5xl mx-auto p-4 sm:p-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="max-w-5xl mx-auto p-4 sm:p-8 animate-in fade-in slide-in-from-bottom-4 duration-700 relative">
       <header className="mb-10 relative">
         <div className="flex items-center gap-4 mb-2">
           <div className="p-3 bg-amber-500/10 dark:bg-amber-500/20 rounded-2xl ring-1 ring-amber-500/20">
@@ -133,13 +195,12 @@ export default function ViewPendientes() {
               >
                 <div className="p-6 md:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                   
-                  {/* Lado Izquierdo: Info */}
+                  {/* Info Izquierda... (Se mantiene igual que tu código original) */}
                   <div className="flex items-start gap-6">
-                    {/* Fecha estilo Calendario */}
                     <div className="flex flex-col items-center justify-center px-6 py-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700 shrink-0">
                       <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Día</span>
                       <span className="text-3xl font-black text-primary leading-none">
-                        {cita.fecha ? cita.fecha.split("-")[2] : "00"}
+                        {cita.fecha ? cita.fecha.split("-")[2].substring(0,2) : "00"}
                       </span>
                       <span className="text-xs font-bold text-slate-500 uppercase mt-1">
                         {cita.fecha ? new Date(cita.fecha).toLocaleDateString('es-CO', { month: 'short' }) : "Mes"}
@@ -152,8 +213,6 @@ export default function ViewPendientes() {
                           <h4 className="font-black text-slate-800 dark:text-slate-100 text-xl leading-tight">
                             {cita.servicio_nombre || "Servicio"}
                           </h4>
-                          
-                          {/* Badge de Estado Dinámico */}
                           {isConfirmada ? (
                             <span className="flex items-center gap-1 px-2.5 py-1 bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg text-[10px] font-black uppercase tracking-wider">
                               <CheckCircle2 size={12}/> Confirmada
@@ -178,23 +237,33 @@ export default function ViewPendientes() {
                     </div>
                   </div>
 
-                  {/* Lado Derecho: Acciones */}
-                  <div className="flex lg:flex-col items-center lg:items-end gap-3 pt-4 lg:pt-0 border-t lg:border-none border-slate-100 dark:border-slate-800 w-full lg:w-auto">
+                  {/* ================= ACCIONES ACTUALIZADAS ================= */}
+                  <div className="flex flex-wrap lg:flex-col items-center lg:items-end gap-3 pt-4 lg:pt-0 border-t lg:border-none border-slate-100 dark:border-slate-800 w-full lg:w-auto">
                     
-                    {/* Botón de Pagar (Solo si está pendiente y hay URL) */}
                     {!isConfirmada && cita.url_pago && (
-                       <a href={cita.url_pago} target="_blank" rel="noreferrer" className="flex-1 lg:flex-none w-full text-center px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl text-sm font-bold shadow-lg hover:scale-105 transition-all">
+                       <a href={cita.url_pago} target="_blank" rel="noreferrer" className="flex-1 lg:flex-none w-full lg:w-auto text-center px-6 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl text-sm font-bold shadow-lg hover:scale-105 transition-all">
                          Pagar Anticipo
                        </a>
                     )}
                     
-                    {/* Botón Cancelar */}
-                    <button 
-                      onClick={() => handleCancelar(uniqueId)}
-                      className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-xl text-sm font-bold hover:bg-red-100 dark:hover:bg-red-500/20 transition-all border border-transparent hover:border-red-200 dark:hover:border-red-500/30"
-                    >
-                      <XCircle size={18} /> Cancelar Cita
-                    </button>
+                    <div className="flex w-full lg:w-auto gap-2">
+                      {/* Botón Reagendar */}
+                      <button 
+                        onClick={() => abrirModalReagendar(cita)}
+                        className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl text-sm font-bold hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-all border border-transparent hover:border-blue-200 dark:hover:border-blue-500/30"
+                      >
+                        <CalendarClock size={18} /> Reagendar
+                      </button>
+
+                      {/* Botón Cancelar */}
+                      <button 
+                        onClick={() => handleCancelar(uniqueId as number)}
+                        className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-xl text-sm font-bold hover:bg-red-100 dark:hover:bg-red-500/20 transition-all border border-transparent hover:border-red-200 dark:hover:border-red-500/30"
+                      >
+                        <XCircle size={18} /> Cancelar
+                      </button>
+                    </div>
+
                   </div>
                 </div>
               </motion.div>
@@ -202,6 +271,81 @@ export default function ViewPendientes() {
           })}
         </AnimatePresence>
       </div>
+
+      {/* ================= MODAL REAGENDAR ================= */}
+      <AnimatePresence>
+        {citaAReagendar && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              className="bg-white dark:bg-slate-900 rounded-[32px] p-8 w-full max-w-md shadow-2xl border border-slate-100 dark:border-slate-800"
+            >
+              <div className="flex items-center gap-4 mb-6">
+                <div className="p-3 bg-blue-500/10 rounded-2xl text-blue-500">
+                  <CalendarClock size={24} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-slate-900 dark:text-white">Reagendar Cita</h3>
+                  <p className="text-sm text-slate-500">Elige un nuevo horario</p>
+                </div>
+              </div>
+
+              <form onSubmit={submitReagendar} className="space-y-5">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Nueva Fecha</label>
+                  <input 
+                    type="date" 
+                    required
+                    value={nuevaFecha}
+                    onChange={(e) => setNuevaFecha(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Nueva Hora</label>
+                  <input 
+                    type="time" 
+                    required
+                    value={nuevaHora}
+                    onChange={(e) => setNuevaHora(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-4 mt-6 border-t border-slate-100 dark:border-slate-800">
+                  <button 
+                    type="button" 
+                    onClick={() => setCitaAReagendar(null)}
+                    disabled={loadingReagendar}
+                    className="flex-1 px-4 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all disabled:opacity-50"
+                  >
+                    Cerrar
+                  </button>
+                  <button 
+                    type="submit" 
+                    disabled={loadingReagendar}
+                    className="flex-1 px-4 py-3 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {loadingReagendar ? (
+                      <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }} className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full" />
+                    ) : (
+                      "Confirmar"
+                    )}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
