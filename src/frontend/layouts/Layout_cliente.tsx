@@ -67,7 +67,7 @@ const ClienteLayout: React.FC<ClienteLayoutProps> = ({ children, activeView, onV
               <Menu size={24} />
             </button>
             <h1 className="text-xl lg:text-2xl font-black uppercase italic truncate">
-              {activeView === 'Inicio' ? 'Panel Cliente' : activeView}
+              {activeView === 'Inicio' ? 'Dashboard' : activeView}
             </h1>
           </div>
 

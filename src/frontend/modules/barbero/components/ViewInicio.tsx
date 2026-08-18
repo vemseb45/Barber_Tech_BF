@@ -2,15 +2,12 @@
 import { useState, useEffect } from 'react';
 import {
   CalendarDays,
-  Star,
-  UserPlus,
   Lightbulb,
   ArrowRight,
   ArrowUpRight,
   Clock,
-  Briefcase
 } from 'lucide-react';
-import type { BarberoView } from '@/frontend/types/types_barbero'; // Ajusta la ruta a donde pongas types.ts
+import type { BarberoView } from '@/frontend/types/types_barbero'; 
 import { jwtDecode } from "jwt-decode";
 
 interface ViewInicioProps {
@@ -18,24 +15,20 @@ interface ViewInicioProps {
 }
 
 interface JwtPayload {
-  user_id: string;
+  cedula: string;
+  email?: string;
+  nombre?: string;
+  rol?: string;
 }
 
 export default function ViewInicio({ onViewChange }: ViewInicioProps) {
   const [tiempoActual, setTiempoActual] = useState(new Date());
   const [proximasCitas, setProximasCitas] = useState<any[]>([]);
-  const [miIdBarbero, setMiIdBarbero] = useState<string | null>(null);
-  
-  // Agregamos un estado para el username, manejando correctamente Next.js
   const [username, setUsername] = useState<string>('Barbero');
 
   const [stats, setStats] = useState({
     citasHoy: 0,
-    citasCrecimiento: 0,
-    ganancias: 450.00,
-    gananciasCrecimiento: 10,
-    nuevosClientes: 0,
-    clientesCrecimiento: 0
+    citasCrecimiento: 0
   });
 
   const tipsDelDia = [
@@ -51,102 +44,120 @@ export default function ViewInicio({ onViewChange }: ViewInicioProps) {
   const tipActual = tipsDelDia[new Date().getDay()];
 
   useEffect(() => {
-    // Obtenemos el nombre del usuario solo en el cliente (navegador)
-    if (typeof window !== 'undefined') {
-      setUsername(localStorage.getItem('username') || 'Barbero');
-    }
-
-    const token = localStorage.getItem("token");
-    if (!token) return;
-    try {
-      const decoded = jwtDecode<JwtPayload>(token);
-      if (decoded.user_id) setMiIdBarbero(String(decoded.user_id));
-    } catch (error) {
-      console.error("Error decodificando token");
-    }
-  }, []);
-
-  useEffect(() => {
     const intervalo = setInterval(() => setTiempoActual(new Date()), 60000);
     return () => clearInterval(intervalo);
   }, []);
 
   useEffect(() => {
-    const fetchCitas = async () => {
+    const cargarDatos = async () => {
       try {
-        if (!miIdBarbero) return;
+        if (typeof window !== 'undefined') {
+          setUsername(localStorage.getItem('username') || 'Barbero');
+        }
+
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        const decoded = jwtDecode<JwtPayload>(token);
+        const barberoId = decoded.cedula; 
+
+        if (!barberoId) {
+          console.error("No se pudo obtener el barberoId del token");
+          return;
+        }
+
+        // --- SOLUCIÓN ZONA HORARIA ---
+        // Extraemos la fecha local exacta evitando el desfase de toISOString() que usa UTC
+        const obtenerFechaLocal = (fecha: Date) => {
+          const year = fecha.getFullYear();
+          const month = String(fecha.getMonth() + 1).padStart(2, '0');
+          const day = String(fecha.getDate()).padStart(2, '0');
+          return `${year}-${month}-${day}`;
+        };
+
+        const ahora = new Date();
+        const hoyStr = obtenerFechaLocal(ahora);
+        
         const ayer = new Date();
         ayer.setDate(ayer.getDate() - 1);
-        const fechaInicio = ayer.toISOString().split("T")[0]; // Desde ayer
+        const ayerStr = obtenerFechaLocal(ayer);
 
         const futura = new Date();
         futura.setDate(futura.getDate() + 7);
-        const fechaFin = futura.toISOString().split("T")[0]; // Hasta en 7 días
+        const fechaFinStr = obtenerFechaLocal(futura);
 
-        const res = await fetch(
-          `/api/agenda/miAgenda/`
-        );
+        const url = `/api/agenda/miAgenda?barberoId=${barberoId}&fechaInicio=${ayerStr}&fechaFin=${fechaFinStr}`;
+
+        const res = await fetch(url, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          }
+        });
+
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.message || `Error HTTP: ${res.status}`);
+        }
+
         const data = await res.json();
         const lista = data.data || [];
-        const ahora = new Date();
 
-        // 1. Calcular KPIs Reales (Hoy vs Ayer)
-        const hoy = new Date();
-        const hoyStr = hoy.toISOString().split("T")[0];
-        const ayerStr = ayer.toISOString().split("T")[0];
-
+        // --- CÁLCULO DE CITAS HOY ---
         const citasHoyArr = lista.filter((c: any) => c.fecha === hoyStr);
         const citasAyerArr = lista.filter((c: any) => c.fecha === ayerStr);
 
         const countHoy = citasHoyArr.length;
         const countAyer = citasAyerArr.length;
         let citasCrecimiento = 0;
+        
         if (countAyer === 0 && countHoy > 0) citasCrecimiento = 100;
         else if (countAyer > 0) citasCrecimiento = Math.round(((countHoy - countAyer) / countAyer) * 100);
 
-        const clientesHoy = new Set(citasHoyArr.map((c: any) => c.cedula_cliente_id)).size;
-        const clientesAyer = new Set(citasAyerArr.map((c: any) => c.cedula_cliente_id)).size;
-        let clientesCrecimiento = 0;
-        if (clientesAyer === 0 && clientesHoy > 0) clientesCrecimiento = 100;
-        else if (clientesAyer > 0) clientesCrecimiento = Math.round(((clientesHoy - clientesAyer) / clientesAyer) * 100);
-
-        setStats(prev => ({
-          ...prev,
+        setStats({
           citasHoy: countHoy,
-          citasCrecimiento,
-          nuevosClientes: clientesHoy,
-          clientesCrecimiento
-        }));
+          citasCrecimiento: citasCrecimiento
+        });
 
-        // 2. Filtrar próximas citas (solo futuras a partir de este instante)
-        const citas = lista
-          .map((cita: any) => ({
-            cedula: cita.cedula_cliente_id,
-            cliente: cita.cliente_nombre || `Cliente ${cita.cedula_cliente_id}`,
-            servicio: cita.nombre_servicio || 'Servicio',
-            fecha: new Date(`${cita.fecha}T${cita.hora}`),
-            estadoBase: cita.estado || 'Pendiente'
-          }))
-          .filter((cita: any) => cita.fecha.getTime() > ahora.getTime() && cita.fecha.toISOString().split("T")[0] >= hoyStr)
+        // Filtrar próximas citas (solo las que aún no han pasado en el día de hoy)
+        const citasTransformadas = lista
+          .map((cita: any) => {
+            const fechaCompleta = new Date(`${cita.fecha}T${cita.hora}:00`);
+            return {
+              cedula: cita.cedula_cliente_id,
+              cliente: cita.cliente_nombre,
+              servicio: cita.nombre_servicio,
+              fecha: fechaCompleta,
+              estadoBase: cita.estado,
+              horaFormateada: cita.hora_formateada 
+            };
+          })
+          .filter((cita: any) => {
+            return !isNaN(cita.fecha.getTime()) && cita.fecha.getTime() >= ahora.getTime();
+          })
           .sort((a: any, b: any) => a.fecha.getTime() - b.fecha.getTime())
-          .slice(0, 3);
+          .slice(0, 3); 
 
-        setProximasCitas(citas);
+        setProximasCitas(citasTransformadas);
+
       } catch (error) {
         console.error("Error cargando citas:", error);
       }
     };
-    fetchCitas();
-  }, [miIdBarbero]);
+    
+    cargarDatos();
+  }, []); 
 
-  const formatearHora = (fecha: Date) => {
-    return fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  const formatearHora = (cita: any) => {
+    if (cita.horaFormateada) return cita.horaFormateada;
+    return cita.fecha.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
   };
 
   return (
     <div className="max-w-7xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
       
-      {/* WELCOME SECTION */}
+      {/* ================= WELCOME SECTION ================= */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-gradient-to-r from-slate-100 to-white dark:from-slate-900 dark:to-slate-800 p-8 rounded-[40px] shadow-sm border border-slate-200 dark:border-transparent dark:shadow-none relative overflow-hidden">
         <div className="relative z-10">
           <h2 className="text-4xl font-black text-slate-800 dark:text-white tracking-tight">
@@ -165,40 +176,12 @@ export default function ViewInicio({ onViewChange }: ViewInicioProps) {
           GESTIONAR AGENDA
           <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
         </button>
-        {/* Decorative elements */}
         <div className="absolute right-[-20px] top-[-20px] w-64 h-64 bg-primary/10 rounded-full blur-3xl"></div>
       </div>
 
-      {/* KEY METRICS */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {[
-          { label: 'Citas Hoy', val: stats.citasHoy, inc: stats.citasCrecimiento, icon: CalendarDays, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-          { label: 'Rating Global', val: '4.9', inc: '+0.2', icon: Star, color: 'text-amber-500', bg: 'bg-amber-500/10' },
-          { label: 'Nuevos Clientes', val: stats.nuevosClientes, inc: stats.clientesCrecimiento, icon: UserPlus, color: 'text-purple-500', bg: 'bg-purple-500/10' },
-        ].map((item, i) => (
-          <div key={i} className="group p-8 rounded-[35px] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 hover:border-primary/20 transition-all duration-500 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">{item.label}</p>
-                <h3 className="text-4xl font-black text-slate-800 dark:text-white">{item.val}</h3>
-              </div>
-              <div className={`p-4 rounded-2xl ${item.bg} ${item.color} group-hover:scale-110 transition-transform duration-500`}>
-                <item.icon size={28} />
-              </div>
-            </div>
-            <div className="mt-6 flex items-center gap-2">
-              <span className="flex items-center px-2 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg text-xs font-black">
-                <ArrowUpRight size={14} className="mr-0.5" />
-                {typeof item.inc === 'number' ? `${item.inc}%` : item.inc}
-              </span>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">vs. periodo anterior</span>
-            </div>
-          </div>
-        ))}
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-        {/* UPCOMING APPOINTMENTS TABLE */}
+        
+        {/* ================= UPCOMING APPOINTMENTS TABLE ================= */}
         <div className="lg:col-span-3 bg-white dark:bg-slate-900 p-8 rounded-[35px] border border-slate-100 dark:border-slate-800 shadow-sm">
           <div className="flex justify-between items-center mb-8">
             <h4 className="font-black text-xl text-slate-800 dark:text-white flex items-center gap-3">
@@ -214,89 +197,100 @@ export default function ViewInicio({ onViewChange }: ViewInicioProps) {
           </div>
 
           <div className="space-y-4">
-            {proximasCitas.map((cita) => {
-              const diferenciaMs = cita.fecha.getTime() - tiempoActual.getTime();
-              const faltanMinutos = Math.max(0, Math.floor(diferenciaMs / 60000));
-              const esHoy = cita.fecha.getDate() === tiempoActual.getDate();
-              const muyProximo = faltanMinutos <= 60 && esHoy && faltanMinutos > 0;
+            {proximasCitas.length === 0 ? (
+              <div className="text-center py-10 bg-slate-50/50 dark:bg-slate-800/30 rounded-[24px] border border-dashed border-slate-200 dark:border-slate-700">
+                <CalendarDays className="w-10 h-10 mx-auto text-slate-300 dark:text-slate-600 mb-3" />
+                <p className="text-sm font-bold text-slate-400">No tienes citas próximas para mostrar.</p>
+              </div>
+            ) : (
+              proximasCitas.map((cita) => {
+                const diferenciaMs = cita.fecha.getTime() - tiempoActual.getTime();
+                const faltanMinutos = Math.max(0, Math.floor(diferenciaMs / 60000));
+                const esHoy = cita.fecha.getDate() === tiempoActual.getDate() && cita.fecha.getMonth() === tiempoActual.getMonth();
+                const muyProximo = faltanMinutos <= 60 && esHoy && faltanMinutos > 0;
 
-              return (
-                <div key={cita.cedula} className="flex items-center justify-between p-5 rounded-[24px] bg-slate-50/50 dark:bg-slate-800/30 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-all group">
-                  <div className="flex items-center gap-5">
-                    <div className="flex flex-col items-center justify-center min-w-[60px] p-2 bg-white dark:bg-slate-800 rounded-2xl shadow-sm">
-                      <span className="text-lg font-black text-slate-800 dark:text-white">{formatearHora(cita.fecha)}</span>
-                      <span className="text-[9px] font-black text-primary uppercase">HORA</span>
-                    </div>
-                    <div>
-                      <h5 className="font-black text-slate-800 dark:text-white text-lg tracking-tight group-hover:text-primary transition-colors">
-                        {cita.cliente}
-                      </h5>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cédula: {cita.cedula}</span>
+                return (
+                  <div key={cita.cedula + cita.fecha.getTime()} className="flex items-center justify-between p-5 rounded-[24px] bg-slate-50/50 dark:bg-slate-800/30 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-all group">
+                    <div className="flex items-center gap-5">
+                      <div className="flex flex-col items-center justify-center min-w-[70px] p-2 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
+                        <span className="text-sm font-black text-slate-800 dark:text-white uppercase">
+                          {formatearHora(cita)}
+                        </span>
+                      </div>
+                      <div>
+                        <h5 className="font-black text-slate-800 dark:text-white text-lg tracking-tight group-hover:text-primary transition-colors capitalize">
+                          {cita.cliente}
+                        </h5>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{cita.servicio}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  
+                    
                     <div className="flex items-center">
-                    {muyProximo ? (
-                      <div className="flex items-center gap-2 px-4 py-2 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-xl font-black text-[10px] uppercase animate-pulse">
-                         <div className="w-2 h-2 rounded-full bg-rose-500" />
-                         En {faltanMinutos} min
-                      </div>
-                    ) : (
-                      <span className={`px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest border ${
-                        cita.estadoBase === 'PENT' 
-                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' 
-                          : 'bg-white dark:bg-slate-800 text-slate-400 border-slate-100 dark:border-slate-700'
-                      }`}>
-                        {cita.estadoBase === 'PENT' ? 'En espera' : cita.estadoBase}
-                      </span>
-                    )}
+                      {muyProximo ? (
+                        <div className="flex items-center gap-2 px-4 py-2 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-xl font-black text-[10px] uppercase animate-pulse">
+                            <div className="w-2 h-2 rounded-full bg-rose-500" />
+                            En {faltanMinutos} min
+                        </div>
+                      ) : (
+                        <span className={`px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest border ${
+                          cita.estadoBase === 'PENT' || cita.estadoBase === 'Pendiente'
+                            ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' 
+                            : 'bg-white dark:bg-slate-800 text-slate-400 border-slate-100 dark:border-slate-700'
+                        }`}>
+                          {cita.estadoBase === 'PENT' ? 'Pendiente' : cita.estadoBase}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
 
-        {/* PERFORMANCE & TIPS */}
-        <div className="lg:col-span-2 space-y-8">
-          <div className="bg-white dark:bg-slate-900 p-8 rounded-[35px] border border-slate-100 dark:border-slate-800 shadow-sm">
-            <h4 className="font-black text-xl text-slate-800 dark:text-white mb-6">Demanda de Servicios</h4>
-            <div className="space-y-5">
-              {[
-                { name: 'Corte Cabello', pct: 45, color: 'bg-blue-500' },
-                { name: 'Recorte Barba', pct: 30, color: 'bg-purple-500' },
-                { name: 'Combo Imperial', pct: 20, color: 'bg-amber-500' },
-              ].map((s, i) => (
-                <div key={i} className="group">
-                  <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest mb-2">
-                    <span className="text-slate-500 group-hover:text-slate-800 dark:group-hover:text-white transition-colors">{s.name}</span>
-                    <span className="text-primary">{s.pct}%</span>
-                  </div>
-                  <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                    <div 
-                      className={`${s.color} h-full rounded-full transition-all duration-1000 group-hover:brightness-110`} 
-                      style={{ width: `${s.pct}%` }} 
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-8 p-6 rounded-[28px] bg-primary/5 dark:bg-primary/10 border border-primary/10 relative overflow-hidden group">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 bg-primary text-white rounded-xl shadow-lg shadow-primary/30">
-                  <Lightbulb size={18} />
-                </div>
-                <span className="text-xs font-black uppercase tracking-[0.15em] text-primary">Consejo del Día</span>
+        {/* ================= RIGHT COLUMN (METRICS & TIPS) ================= */}
+        <div className="lg:col-span-2 space-y-6">
+          
+          {/* CITAS HOY CARD */}
+          <div className="group p-8 rounded-[35px] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 hover:border-primary/20 transition-all duration-500 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">Citas Hoy</p>
+                <h3 className="text-4xl font-black text-slate-800 dark:text-white">{stats.citasHoy}</h3>
               </div>
-              <p className="text-sm text-slate-600 dark:text-slate-300 font-medium italic leading-relaxed leading-snug">
-                "{tipActual}"
-              </p>
-              <Lightbulb size={90} className="absolute -right-6 -bottom-6 text-primary/5 rotate-12 group-hover:rotate-0 transition-transform duration-700" />
+              <div className="p-4 rounded-2xl bg-blue-500/10 text-blue-500 group-hover:scale-110 transition-transform duration-500">
+                <CalendarDays size={28} />
+              </div>
+            </div>
+            <div className="mt-6 flex items-center gap-2">
+              <span className={`flex items-center px-2 py-1 rounded-lg text-xs font-black ${
+                stats.citasCrecimiento >= 0 
+                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' 
+                  : 'bg-red-500/10 text-red-600 dark:text-red-400'
+              }`}>
+                {stats.citasCrecimiento >= 0 && <ArrowUpRight size={14} className="mr-0.5" />}
+                {stats.citasCrecimiento}%
+              </span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">vs. ayer</span>
             </div>
           </div>
+
+          {/* CONSEJO DEL DÍA */}
+          <div className="p-8 rounded-[35px] bg-primary/5 dark:bg-primary/10 border border-primary/10 relative overflow-hidden group">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-primary text-white rounded-xl shadow-lg shadow-primary/30">
+                <Lightbulb size={20} />
+              </div>
+              <span className="text-sm font-black uppercase tracking-[0.15em] text-primary">Consejo del Día</span>
+            </div>
+            <p className="text-base text-slate-700 dark:text-slate-300 font-medium italic leading-relaxed z-10 relative">
+              "{tipActual}"
+            </p>
+            <Lightbulb size={120} className="absolute -right-6 -bottom-6 text-primary/5 rotate-12 group-hover:rotate-0 transition-transform duration-700" />
+          </div>
+
         </div>
       </div>
     </div>

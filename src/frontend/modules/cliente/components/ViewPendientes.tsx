@@ -13,7 +13,7 @@ interface CitaPendiente {
   servicio_precio?: string | number;
   barbero_nombre?: string;
   url_pago?: string;
-  cedula_barbero?: string; // Útil si la API lo requiere
+  cedula_barbero?: string;
 }
 
 export default function ViewPendientes() {
@@ -21,11 +21,15 @@ export default function ViewPendientes() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // ================= ESTADOS DEL MODAL =================
+  // ================= ESTADOS DEL MODAL REAGENDAR =================
   const [citaAReagendar, setCitaAReagendar] = useState<CitaPendiente | null>(null);
   const [nuevaFecha, setNuevaFecha] = useState("");
   const [nuevaHora, setNuevaHora] = useState("");
   const [loadingReagendar, setLoadingReagendar] = useState(false);
+
+  // ================= ESTADOS DEL MODAL CANCELAR =================
+  const [idCitaACancelar, setIdCitaACancelar] = useState<number | null>(null);
+  const [loadingCancelar, setLoadingCancelar] = useState(false);
 
   useEffect(() => {
     const fetchCitas = async () => {
@@ -53,10 +57,15 @@ export default function ViewPendientes() {
     fetchCitas();
   }, []);
 
-  const handleCancelar = async (idCita: number) => {
-    const confirmar = window.confirm("¿Estás seguro de que deseas cancelar esta cita?");
-    if (!confirmar) return;
+  // ================= LÓGICA DE CANCELAR =================
+  const abrirModalCancelar = (idCita: number) => {
+    setIdCitaACancelar(idCita);
+  };
 
+  const confirmarCancelacion = async () => {
+    if (idCitaACancelar === null) return;
+    
+    setLoadingCancelar(true);
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(`/api/citas/cancelar`, {
@@ -65,27 +74,30 @@ export default function ViewPendientes() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ id_cita: idCita })
+        body: JSON.stringify({ id_cita: idCitaACancelar })
       });
 
       if (res.ok) {
-        setCitas(prev => prev.filter(c => (c.id || c.id_cita) !== idCita));
-        alert("Cita cancelada exitosamente");
+        setCitas(prev => prev.filter(c => (c.id || c.id_cita) !== idCitaACancelar));
+        // Opcional: Puedes cambiar este alert por un Toast/Notificación más adelante
+        alert("Cita cancelada exitosamente"); 
       } else {
         alert("No se pudo cancelar la cita");
       }
     } catch (e) {
       console.error(e);
       alert("Error de red al intentar cancelar");
+    } finally {
+      setLoadingCancelar(false);
+      setIdCitaACancelar(null); // Cerramos el modal
     }
   };
 
   // ================= LÓGICA DE REAGENDAR =================
   const abrirModalReagendar = (cita: CitaPendiente) => {
     setCitaAReagendar(cita);
-    setNuevaFecha(cita.fecha.split("T")[0]); // Ajusta si la fecha viene con timezones
+    setNuevaFecha(cita.fecha.split("T")[0]);
     
-    // Extraemos solo HH:mm para el input type="time"
     const horaLimpia = cita.hora.length > 5 ? cita.hora.substring(0, 5) : cita.hora;
     setNuevaHora(horaLimpia);
   };
@@ -97,7 +109,6 @@ export default function ViewPendientes() {
     setLoadingReagendar(true);
     const idCita = citaAReagendar.id || citaAReagendar.id_cita;
 
-    // Prisma espera el formato de hora HH:mm:ss
     const horaFormateada = nuevaHora.length === 5 ? `${nuevaHora}:00` : nuevaHora;
 
     try {
@@ -118,14 +129,13 @@ export default function ViewPendientes() {
       const data = await res.json();
 
       if (res.ok) {
-        // Actualizamos la cita en el estado local para reflejar el cambio inmediato
         setCitas(prev => prev.map(c => 
           (c.id === idCita || c.id_cita === idCita) 
             ? { ...c, fecha: nuevaFecha, hora: nuevaHora } 
             : c
         ));
         alert("Cita reagendada exitosamente");
-        setCitaAReagendar(null); // Cerramos modal
+        setCitaAReagendar(null);
       } else {
         alert(data.message || "Error al reagendar la cita");
       }
@@ -195,7 +205,6 @@ export default function ViewPendientes() {
               >
                 <div className="p-6 md:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                   
-                  {/* Info Izquierda... (Se mantiene igual que tu código original) */}
                   <div className="flex items-start gap-6">
                     <div className="flex flex-col items-center justify-center px-6 py-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700 shrink-0">
                       <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Día</span>
@@ -237,7 +246,6 @@ export default function ViewPendientes() {
                     </div>
                   </div>
 
-                  {/* ================= ACCIONES ACTUALIZADAS ================= */}
                   <div className="flex flex-wrap lg:flex-col items-center lg:items-end gap-3 pt-4 lg:pt-0 border-t lg:border-none border-slate-100 dark:border-slate-800 w-full lg:w-auto">
                     
                     {!isConfirmada && cita.url_pago && (
@@ -247,7 +255,6 @@ export default function ViewPendientes() {
                     )}
                     
                     <div className="flex w-full lg:w-auto gap-2">
-                      {/* Botón Reagendar */}
                       <button 
                         onClick={() => abrirModalReagendar(cita)}
                         className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl text-sm font-bold hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-all border border-transparent hover:border-blue-200 dark:hover:border-blue-500/30"
@@ -255,9 +262,9 @@ export default function ViewPendientes() {
                         <CalendarClock size={18} /> Reagendar
                       </button>
 
-                      {/* Botón Cancelar */}
+                      {/* Botón modificado para abrir el Modal en vez del alert de ventana */}
                       <button 
-                        onClick={() => handleCancelar(uniqueId as number)}
+                        onClick={() => abrirModalCancelar(uniqueId as number)}
                         className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-xl text-sm font-bold hover:bg-red-100 dark:hover:bg-red-500/20 transition-all border border-transparent hover:border-red-200 dark:hover:border-red-500/30"
                       >
                         <XCircle size={18} /> Cancelar
@@ -346,6 +353,56 @@ export default function ViewPendientes() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ================= MODAL CANCELAR ================= */}
+      <AnimatePresence>
+        {idCitaACancelar !== null && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              className="bg-white dark:bg-slate-900 rounded-[32px] p-8 w-full max-w-md shadow-2xl border border-slate-100 dark:border-slate-800 text-center"
+            >
+              <div className="w-16 h-16 bg-red-50 dark:bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
+                <AlertCircle size={32} />
+              </div>
+              <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-2">¿Cancelar Cita?</h3>
+              <p className="text-slate-500 dark:text-slate-400 mb-8">
+                Esta acción no se puede deshacer. ¿Estás seguro de que deseas cancelar tu cita programada?
+              </p>
+
+              <div className="flex gap-3">
+                <button 
+                  type="button" 
+                  onClick={() => setIdCitaACancelar(null)}
+                  disabled={loadingCancelar}
+                  className="flex-1 px-4 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all disabled:opacity-50"
+                >
+                  Volver
+                </button>
+                <button 
+                  onClick={confirmarCancelacion}
+                  disabled={loadingCancelar}
+                  className="flex-1 px-4 py-3 rounded-xl font-bold bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {loadingCancelar ? (
+                    <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }} className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full" />
+                  ) : (
+                    "Sí, cancelar"
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }
