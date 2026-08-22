@@ -20,42 +20,42 @@ const MENU_DATA: MenuSection[] = [
     menuId: "inicio",
     title: "Inicio de Sesión",
     subItems: [
-      { id: "inicio-sesion", label: "Iniciar Sesion" },
-      { id: "Registro", label: "Registro" },
-      { id: "olvido", label: "Olvido contraseña" },
+      { id: "inicio-sesion", label: "Iniciar Sesión" },
+      { id: "registro", label: "Registro" },
+      { id: "olvido", label: "Olvido de contraseña" },
     ],
   },
   {
-    menuId: "opr",
+    menuId: "modulo-cliente",
     title: "Módulo Cliente",
     subItems: [
-      { id: "cliente", label: "Modulo Cliente" },
-      { id: "asignacion", label: "Reservar" },
+      { id: "cliente", label: "Dashboard Cliente" },
+      { id: "asignacion", label: "Reservar Cita" },
       { id: "cierre", label: "Citas Pendientes" },
-      { id: "terminadas", label: "Citas terminadas" }
+      { id: "terminadas", label: "Historial de Cortes" }
     ],
   },
   {
-    menuId: "reclutamiento",
-    title: "Módulo barbero",
+    menuId: "modulo-barbero",
+    title: "Módulo Barbero",
     subItems: [
-      { id: "reclu", label: "Poblar" },
-      { id: "gestion", label: "Gestión de Candidatos" },
-      { id: "masivo", label: "Crear Candidatos Masivos" },
-      { id: "unico", label: "Crear Candidato Unico" },
-      { id: "verf", label: "Verificacion Candidatos" },
-      { id: "pobla", label: "Reclutamiento" },
-      { id: "ases", label: "Solicitar Assesment" },
-      { id: "agensd", label: "Citas Agendadas" },
+      { id: "directorio", label: "Directorio de Clientes" },
+      { id: "gestion-citas", label: "Gestión de Reservas" },
+      { id: "servicios", label: "Configurar Servicios" },
+      { id: "nuevo-cliente", label: "Registrar Nuevo Cliente" },
+      { id: "verificacion", label: "Verificación de Asistencia" },
+      { id: "atencion", label: "Atención en Barbería" },
+      { id: "corte-especial", label: "Programar Servicio Especial" },
+      { id: "citas-asignadas", label: "Agenda del Día" },
     ],
   },
   {
-    menuId: "analisis",
-    title: "Modulo Administrador",
+    menuId: "modulo-admin",
+    title: "Módulo Administrador",
     subItems: [
-      { id: "anal", label: "Análisis" },
-      { id: "cita", label: "Citas" },
-      { id: "cal", label: "Calificación Assesment" },
+      { id: "panel-admin", label: "Panel de Control" },
+      { id: "control-reservas", label: "Control General de Citas" },
+      { id: "evaluacion", label: "Evaluación de Servicio" },
     ],
   },
 ];
@@ -155,7 +155,7 @@ export default function ManualUsuarioView() {
                     type="button"
                     onClick={() => handleMainMenuClick(menu.menuId)}
                     className={`flex w-full items-center justify-between px-5 py-3 text-sm font-medium transition-colors hover:bg-slate-50 hover:text-[#8519d2] ${isActivePadre
-                        ? "border-l-4 border-red-500 text-[#8519d2] bg-slate-50/50"
+                        ? "border-l-4 border-[#8519d2] text-[#8519d2] bg-slate-50/50"
                         : "border-l-4 border-transparent text-slate-600"
                       }`}
                   >
@@ -211,28 +211,28 @@ export default function ManualUsuarioView() {
                 <ImageWrapper src="/Imagenes/manual_usuario/inicio_sesion.png" alt="Inicio de sesión" />
               </StepBlock>
 
-              <StepBlock title="Paso 2: Verificacion de usuario">
-                <p>Ingrese su correo electrónico y contraseña en los campos correspondientes haga clic en el botón "Ingresar" para acceder al sistema.</p>
-                <ImageWrapper src="/Imagenes/manual_usuario/inicio_sesion2.png" alt="Inicio de sesión" />
+              <StepBlock title="Paso 2: Verificación de usuario">
+                <p>Ingrese su correo electrónico y contraseña en los campos correspondientes, luego haga clic en el botón "Ingresar" para acceder al sistema.</p>
+                <ImageWrapper src="/Imagenes/manual_usuario/inicio_sesion2.png" alt="Credenciales de acceso" />
               </StepBlock>
 
-              <SectionTitle id="Registro">Registro</SectionTitle>
+              <SectionTitle id="registro">Registro</SectionTitle>
 
               <StepBlock>
                 <p>Si aún no cuenta con una cuenta de usuario, haga clic en la opción "Registrarse gratis".</p>
-                <ImageWrapper src="/Imagenes/manual_usuario/inicio_sesion3.png" alt="Caducidad" />
+                <ImageWrapper src="/Imagenes/manual_usuario/inicio_sesion3.png" alt="Botón de registro" />
               </StepBlock>
 
               <StepBlock title="Paso 1: Completar formulario">
                 <p>Para crear su cuenta, complete todos los campos requeridos en el formulario de registro y haga clic en el botón "Registrarse ahora".</p>
-                <ImageWrapper src="/Imagenes/manual_usuario/registro.png" alt="Cambio contraseña" />
+                <ImageWrapper src="/Imagenes/manual_usuario/registro.png" alt="Formulario de registro" />
               </StepBlock>
 
               <SectionTitle id="olvido">Olvido de contraseña</SectionTitle>
 
               <StepBlock title="Paso 1: Recuperación de contraseña">
                 <p>En caso de haber olvidado su contraseña, haga clic en la opción “¿Olvidaste tu contraseña?” para iniciar el proceso de recuperación.</p>
-                <ImageWrapper src="/Imagenes/manual_usuario/olvido_contraseña.png" alt="Recuperación" />
+                <ImageWrapper src="/Imagenes/manual_usuario/olvido_contraseña.png" alt="Recuperación de contraseña" />
               </StepBlock>
 
               <StepBlock title="Paso 2: Enviar solicitud de recuperación">
@@ -242,12 +242,12 @@ export default function ManualUsuarioView() {
 
               <StepBlock>
                 <p>El sistema mostrará un mensaje de confirmación indicando que el correo electrónico para el restablecimiento ha sido enviado correctamente.</p>
-                <ImageWrapper src="/Imagenes/manual_usuario/olvido_contraseña3.png" alt="Confirmación envío" />
+                <ImageWrapper src="/Imagenes/manual_usuario/olvido_contraseña3.png" alt="Confirmación de envío" />
               </StepBlock>
 
               <StepBlock title="Paso 3: Acceso al enlace de recuperación">
                 <p>Recibirá un mensaje en su correo electrónico con un enlace para restablecer su contraseña. Haga clic en el botón "Restablecer Contraseña" para continuar. Tenga en cuenta que dicho enlace cuenta con una vigencia de 15 minutos.</p>
-                <ImageWrapper src="/Imagenes/manual_usuario/olvido_contraseña4.png" alt="Enlace recuperación" />
+                <ImageWrapper src="/Imagenes/manual_usuario/olvido_contraseña4.png" alt="Enlace de recuperación" />
               </StepBlock>
 
               <StepBlock title="Paso 4: Cambiar contraseña">
@@ -257,329 +257,248 @@ export default function ManualUsuarioView() {
             </div>
           )}
 
-          {/* === SECCIÓN: MÓDULO Cliente === */}
-          {activeSection === "opr" && (
+          {/* === SECCIÓN: MÓDULO CLIENTE === */}
+          {activeSection === "modulo-cliente" && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               <SectionTitle id="cliente">Módulo Cliente</SectionTitle>
-              <p>Tras el inicio de sesión, el sistema mostrará el dashboard correspondiente al cliente.</p>
-              <ImageWrapper src="/Imagenes/manual_usuario/cliente.png" alt="Módulo OPR" />
+              <p>Tras el inicio de sesión, el sistema mostrará el dashboard correspondiente al cliente de la barbería.</p>
+              <ImageWrapper src="/Imagenes/manual_usuario/cliente.png" alt="Dashboard Cliente" />
 
               <SectionTitle id="asignacion">Reservar cita</SectionTitle>
 
               <StepBlock title="Paso 1: Acceder al módulo">
-                <p>Para reservar una cita, debe dirigirse a la barra del menú o hacer clic en el botón "Reservar cita" del dashboard.</p>
-                <ImageWrapper src="/Imagenes/manual_usuario/reservar.png" alt="Asignar OPR" />
+                <p>Para reservar un corte o servicio, debe dirigirse a la barra del menú o hacer clic en el botón "Reservar cita" del dashboard.</p>
+                <ImageWrapper src="/Imagenes/manual_usuario/reservar.png" alt="Módulo de reservas" />
               </StepBlock>
 
               <StepBlock title="Paso 2: Seleccionar Barbero">
-                <p>Haga clic en la tarjeta del barbero para realizar la selección.</p>
-                <ImageWrapper src="/Imagenes/manual_usuario/reservar1.png" alt="Seleccionar responsable" />
+                <p>Haga clic en la tarjeta del barbero de su preferencia para realizar la selección.</p>
+                <ImageWrapper src="/Imagenes/manual_usuario/reservar1.png" alt="Seleccionar barbero" />
               </StepBlock>
 
               <StepBlock title="Paso 3: Selección del servicio">
-                <p>Haga clic en la tarjeta del servicio para realizar la selección.</p>
-                <ImageWrapper src="/Imagenes/manual_usuario/reservar2.png" alt="Selección reclutador" />
+                <p>Haga clic en la tarjeta del servicio (ej. Corte clásico, arreglo de barba) para añadirlo a su reserva.</p>
+                <ImageWrapper src="/Imagenes/manual_usuario/reservar2.png" alt="Selección de servicio" />
               </StepBlock>
 
               <StepBlock title="Paso 4: Selección del día">
-                <p>Haga clic en la tarjeta del día para realizar la selección.</p>
-                <ImageWrapper src="/Imagenes/manual_usuario/reservar3.png" alt="Selección analista" />
+                <p>Haga clic en la fecha deseada en el calendario disponible.</p>
+                <ImageWrapper src="/Imagenes/manual_usuario/reservar3.png" alt="Selección de fecha" />
               </StepBlock>
 
-              <StepBlock title="Paso 5: Selección del Hora">
-                <p>Haga clic en la tarjeta de la hora para realizar la selección.</p>
-                <ImageWrapper src="/Imagenes/manual_usuario/reservar15.png" alt="Confirmar asignación" />
+              <StepBlock title="Paso 5: Selección de la Hora">
+                <p>Haga clic en el bloque de hora disponible para agendar su cita.</p>
+                <ImageWrapper src="/Imagenes/manual_usuario/reservar15.png" alt="Selección de hora" />
               </StepBlock>
 
               <StepBlock title="Paso 6: Confirmar cita">
-                <p>Haga clic en el boton de "Confirmar Cita".</p>
-                <ImageWrapper src="/Imagenes/manual_usuario/reservar4.png" alt="Confirmar asignación" />
+                <p>Revise el resumen de su reserva y haga clic en el botón "Confirmar Cita".</p>
+                <ImageWrapper src="/Imagenes/manual_usuario/reservar4.png" alt="Confirmación de cita" />
               </StepBlock>
 
               <StepBlock>
-                <p>Se redirigirá a una pasarela de pago para abonar un porcentaje y confirmar la cita.</p>
-                <ImageWrapper src="/Imagenes/manual_usuario/reservar5.png" alt="Confirmar asignación" />
+                <p>Se redirigirá a una pasarela de pago para abonar un anticipo (si aplica) y confirmar la cita de forma definitiva.</p>
+                <ImageWrapper src="/Imagenes/manual_usuario/reservar5.png" alt="Pasarela de pago" />
               </StepBlock>
 
               <StepBlock>
-                <p>Para verificar el estado de su cita confirmada, diríjase al dashboard.</p>
-                <ImageWrapper src="/Imagenes/manual_usuario/reservar6.png" alt="Confirmar asignación" />
+                <p>Para verificar el estado de su cita confirmada, diríjase nuevamente a su dashboard.</p>
+                <ImageWrapper src="/Imagenes/manual_usuario/reservar6.png" alt="Estado de cita" />
               </StepBlock>
 
-              <SectionTitle id="cierre">Citas pendientes</SectionTitle>
+              <SectionTitle id="cierre">Citas Pendientes</SectionTitle>
 
               <StepBlock title="Paso 1: Acceder al módulo">
-                <p>Para observar las citas pendientes, debe dirigirse a la barra del menú y dar clic en el botón "Citas pendientes".</p>
-                <ImageWrapper src="/Imagenes/manual_usuario/pendiente.png" alt="Selección OPR" />
+                <p>Para observar sus próximas reservas, diríjase a la barra del menú y dé clic en el botón "Citas pendientes".</p>
+                <ImageWrapper src="/Imagenes/manual_usuario/pendiente.png" alt="Citas pendientes" />
               </StepBlock>
 
               <StepBlock>
-                <p>En este apartado podrá ver sus citas y gestionarlas para reagendarlas o cancelarlas si lo desea.</p>
-                <ImageWrapper src="/Imagenes/manual_usuario/pendiente1.png" alt="Cierre OPR" />
+                <p>En este apartado podrá ver sus citas agendadas y gestionarlas para reagendarlas o cancelarlas si lo requiere.</p>
+                <ImageWrapper src="/Imagenes/manual_usuario/pendiente1.png" alt="Gestión de citas pendientes" />
               </StepBlock>
 
               <StepBlock title="Paso 1: Reagendar">
-                <p>Para reagendar debe dar clic en el boton "Reagendar".</p>
-                <ImageWrapper src="/Imagenes/manual_usuario/pendiente2.png" alt="Confirmar cierre" />
+                <p>Para modificar la fecha u hora, debe dar clic en el botón "Reagendar".</p>
+                <ImageWrapper src="/Imagenes/manual_usuario/pendiente2.png" alt="Botón reagendar" />
               </StepBlock>
 
-              <StepBlock title="Paso 2: Seleccionar horario">
-                <p>Debe seleccionar el nuevo horario para la cita y dar clic en confirmar.</p>
-                <ImageWrapper src="/Imagenes/manual_usuario/pendiente3.png" alt="Confirmar cierre" />
+              <StepBlock title="Paso 2: Seleccionar nuevo horario">
+                <p>Elija la nueva disponibilidad en la agenda del barbero y dé clic en confirmar.</p>
+                <ImageWrapper src="/Imagenes/manual_usuario/pendiente3.png" alt="Confirmar nuevo horario" />
               </StepBlock>
 
               <StepBlock title="Paso 1: Cancelar">
-                <p>Para Cancelar debe dar clic en el boton "Cancelar".</p>
-                <ImageWrapper src="/Imagenes/manual_usuario/pendiente4.png" alt="Confirmar cierre" />
+                <p>Para anular la cita, dé clic en el botón "Cancelar".</p>
+                <ImageWrapper src="/Imagenes/manual_usuario/pendiente4.png" alt="Botón cancelar" />
               </StepBlock>
 
-              <StepBlock title="Paso 2: Confirmar">
-                <p>Aparecerá una ventana de confirmación donde debe hacer clic en "Sí, cancelar".</p>
-                <ImageWrapper src="/Imagenes/manual_usuario/pendiente5.png" alt="Confirmar cierre" />
+              <StepBlock title="Paso 2: Confirmar cancelación">
+                <p>Aparecerá una ventana de confirmación donde debe hacer clic en "Sí, cancelar cita".</p>
+                <ImageWrapper src="/Imagenes/manual_usuario/pendiente5.png" alt="Confirmar cancelación" />
               </StepBlock>
 
-              <SectionTitle id="terminadas">Citas terminadas</SectionTitle>
+              <SectionTitle id="terminadas">Historial de Cortes</SectionTitle>
 
-              <StepBlock title="Paso 1: Acceder al módulo">
-                <p>Para observar las citas terminadas, debe dirigirse a la barra del menú y dar clic en el botón "Citas Terminadas".</p>
-                <ImageWrapper src="/Imagenes/manual_usuario/terminadas.png" alt="Selección OPR" />
+              <StepBlock title="Paso 1: Acceder al historial">
+                <p>Para revisar los servicios que ya ha tomado, diríjase a la barra del menú y dé clic en el botón "Historial de Cortes".</p>
+                <ImageWrapper src="/Imagenes/manual_usuario/terminadas.png" alt="Historial de citas" />
               </StepBlock>
 
               <StepBlock >
-                <p>Podra observar las citas que se han completado.</p>
-                <ImageWrapper src="/Imagenes/manual_usuario/terminadas1.png" alt="Selección OPR" />
+                <p>Aquí podrá observar el detalle de las citas completadas y los servicios realizados.</p>
+                <ImageWrapper src="/Imagenes/manual_usuario/terminadas1.png" alt="Detalle historial" />
               </StepBlock>
 
             </div>
           )}
 
-          {/* === SECCIÓN:  MÓDULO barbero === */}
-          {activeSection === "reclutamiento" && (
+          {/* === SECCIÓN: MÓDULO BARBERO === */}
+          {activeSection === "modulo-barbero" && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <SectionTitle id="reclu">Barbero</SectionTitle>
+              <SectionTitle id="directorio">Módulo Barbero</SectionTitle>
 
-              <StepBlock title="Módulo de Reclutamiento">
-                <p>Al iniciar sesión, accederá a la vista principal del Módulo de Reclutamiento. Desde aquí podrá gestionar a los candidatos y crear nuevos assessments.</p>
-                <ImageWrapper src="img/reclutador1.png" alt="Módulo Reclutamiento" />
+              <StepBlock title="Panel del Barbero">
+                <p>Al iniciar sesión con cuenta de empleado, accederá a la vista principal del Módulo Barbero. Desde aquí podrá gestionar su agenda, sus clientes y los cortes programados.</p>
+                <ImageWrapper src="img/barbero_dashboard.png" alt="Módulo Barbero" />
               </StepBlock>
 
-              <SectionTitle id="gestion">Gestión de candidatos</SectionTitle>
+              <SectionTitle id="gestion-citas">Gestión de Reservas</SectionTitle>
 
-              <StepBlock title="Submódulos">
-                <p>En el panel izquierdo encontrará la barra de navegación del sistema. Haga clic en "Reclutamiento" para desplegar todas las opciones disponibles.</p>
-                <ImageWrapper src="img/reclutador2.png" alt="Navegación Reclutamiento" />
+              <StepBlock title="Navegación Principal">
+                <p>En el panel izquierdo encontrará la barra de navegación del sistema. Haga clic en "Gestión de Reservas" para desplegar todas las opciones operativas.</p>
+                <ImageWrapper src="img/barbero_nav.png" alt="Navegación Barbero" />
               </StepBlock>
 
-              <StepBlock title="Poblado">
-                <p>Al hacer clic en "Poblado" en la barra de navegación, podrá visualizar la lista consolidada de todos los candidatos registrados en todas las OPR.</p>
-                <ImageWrapper src="img/reclutador3.png" alt="Poblado" />
+              <StepBlock title="Directorio de Clientes">
+                <p>Al hacer clic en "Directorio", podrá visualizar la lista consolidada de todos los clientes registrados y atendidos en la barbería.</p>
+                <ImageWrapper src="img/barbero_directorio.png" alt="Directorio de clientes" />
               </StepBlock>
 
-              <StepBlock title="Historial de cargas">
-                <p>Al hacer clic en "Historial de cargas" en la barra de navegación, podrá visualizar el registro de todas las bases de candidatos procesadas anteriormente.</p>
-                <ImageWrapper src="img/reclutador4.png" alt="Historial" />
+              <StepBlock title="Historial de Servicios">
+                <p>Al hacer clic en "Historial", podrá visualizar el registro de todos los servicios y cortes procesados anteriormente en su turno.</p>
+                <ImageWrapper src="img/barbero_historial.png" alt="Historial de servicios" />
               </StepBlock>
 
-              <SectionTitle id="masivo">Crear candidatos masivos</SectionTitle>
+              <SectionTitle id="servicios">Configurar Servicios de Barbería</SectionTitle>
 
-              <StepBlock title="Paso 1: Acceder al submódulo de Carga masiva">
-                <p>Para iniciar el proceso de carga masiva de candidatos, acceda al submódulo haciendo clic en la opción "Carga masiva de candidatos" en la barra de navegacion.</p>
-                <ImageWrapper src="img/reclutador5.png" alt="Carga masiva" />
+              <StepBlock title="Paso 1: Acceder al catálogo de servicios">
+                <p>Para agregar nuevos tipos de cortes o combos, acceda al submódulo haciendo clic en la opción "Configuración de Servicios".</p>
+                <ImageWrapper src="img/barbero_servicios.png" alt="Catálogo de servicios" />
               </StepBlock>
 
-              <StepBlock title="Paso 2: Selección de proceso">
-                <p>Haga clic en "Elegir un proceso activo o vacante" para desplegar la lista de las OPR asignadas a su usuario.</p>
-                <ImageWrapper src="img/reclutador6.png" alt="Selección de proceso" />
+              <StepBlock title="Paso 2: Selección de categoría">
+                <p>Haga clic en "Elegir categoría" para desplegar la lista (ej. Cabello, Barba, Cejas, Combos).</p>
+                <ImageWrapper src="img/barbero_categoria.png" alt="Selección de categoría" />
               </StepBlock>
 
-              <StepBlock title="Paso 3: Selección de la OPR">
-                <p>Haga clic en una OPR activa para habilitar la opción de carga masiva.</p>
-                <ImageWrapper src="img/reclutador7.png" alt="Selección OPR activa" />
-              </StepBlock>
-
-              <StepBlock title="Paso 4: Cargar archivo de candidatos">
-                <p>Puede descargar la plantilla de carga haciendo clic en el siguiente enlace:
-                  <a href="formato/Formato.xlsx" download="Candidatos_excel.xlsx" className="font-semibold text-[#8519d2] hover:underline ml-1">
+              <StepBlock title="Paso 3: Carga de catálogo (Opcional)">
+                <p>Si desea importar una lista de precios, descargue la plantilla haciendo clic en el siguiente enlace:
+                  <a href="formato/Servicios.xlsx" download="Servicios_Barberia.xlsx" className="font-semibold text-[#8519d2] hover:underline ml-1">
                     Descargar el formato aquí
                   </a>.
                 </p>
-                <p className="mt-2">Una vez completado y diligenciado el formato con la información de los candidatos, puede arrastrar el archivo al área designada o hacer clic en "Subir consolidado aquí".</p>
-                <ImageWrapper src="img/reclutador8.png" alt="Cargar archivo" />
+                <p className="mt-2">Una vez diligenciado, arrastre el archivo al área designada o haga clic en "Subir lista de precios".</p>
+                <ImageWrapper src="img/barbero_carga_precios.png" alt="Cargar archivo" />
               </StepBlock>
 
-              <StepBlock title="Paso 5: Seleccionar Archivo">
-                <p>Haga clic en el botón "Subir consolidado aquí" para abrir el explorador de archivos. Seleccione el archivo correspondiente y presione "Abrir".</p>
-                <ImageWrapper src="img/reclutador9.png" alt="Explorador de archivos" />
+              <SectionTitle id="nuevo-cliente">Registrar Nuevo Cliente Manualmente</SectionTitle>
+
+              <StepBlock title="Paso 1: Acceder al Registro">
+                <p>Para registrar a un cliente que llegó sin cita previa (Walk-in), acceda haciendo clic en "Registrar Nuevo Cliente".</p>
+                <ImageWrapper src="img/barbero_registro_cliente.png" alt="Registro único" />
               </StepBlock>
 
-              <StepBlock title="Paso 6: Cargar el archivo">
-                <p>Tras subir el archivo Excel, el sistema validará automáticamente la información. Se indicará qué hojas cumplen con los parámetros y cuáles presentan errores de estructura. Para finalizar, haga clic en el botón "Cargar-OPR".</p>
-                <ImageWrapper src="img/reclutador10.png" alt="Validación archivo" />
+              <StepBlock title="Paso 2: Completar el formulario">
+                <p>Complete los datos básicos de contacto del cliente y el servicio requerido, luego haga clic en "GUARDAR CLIENTE".</p>
+                <ImageWrapper src="img/barbero_form_cliente.png" alt="Formulario cliente" />
               </StepBlock>
 
-              <StepBlock>
-                <p>Al finalizar la carga, los candidatos quedarán vinculados a la OPR seleccionada. El sistema mostrará automáticamente cualquier error de carga o bloqueo de ingreso detectado. Si necesita procesar un nuevo archivo, haga clic en el botón 'NUEVA IMPORTACIÓN'.</p>
-                <ImageWrapper src="img/reclutador11.png" alt="Finalizar carga" />
+              <SectionTitle id="verificacion">Verificación de Asistencia</SectionTitle>
+
+              <StepBlock title="Paso 1: Acceder a la Agenda del Día">
+                <p>Desde su dashboard principal, haga clic en "Agenda del Día" para ver los clientes programados.</p>
+                <ImageWrapper src="img/barbero_agenda.png" alt="Agenda del día" />
               </StepBlock>
 
-              <SectionTitle id="unico">Crear Candidato Unico</SectionTitle>
-
-              <StepBlock title="Paso 1: Acceder al Registro Único de Candidatos">
-                <p>Para realizar el registro individual de un candidato, acceda al submódulo haciendo clic en la opción "Registro Único de Candidato".</p>
-                <ImageWrapper src="img/reclutador12.png" alt="Registro único" />
+              <StepBlock title="Paso 2: Confirmar llegada">
+                <p>En esta sección se listan las reservas. Para ver el detalle de un cliente o marcar su llegada, haga clic en el icono del ojo y luego en "Marcar Asistencia".</p>
+                <ImageWrapper src="img/barbero_asistencia.png" alt="Lista de reservas" />
               </StepBlock>
 
-              <StepBlock title="Paso 2: Selección de la OPR">
-                <p>Para realizar el registro individual de un candidato, primero debe seleccionar la OPR correspondiente.</p>
-                <ImageWrapper src="img/reclutador13.png" alt="Selección OPR Registro" />
+              <SectionTitle id="atencion">Atención en Barbería</SectionTitle>
+
+              <StepBlock title="Paso 1: Iniciar Servicio">
+                <p>Seleccione la reserva correspondiente desde su agenda y haga clic en "Iniciar Servicio".</p>
+                <ImageWrapper src="img/barbero_iniciar.png" alt="Iniciar servicio" />
               </StepBlock>
 
-              <StepBlock title="Paso 3: Completar el formulario">
-                <p>Tras seleccionar la OPR, complete los campos del formulario y haga clic en el botón "GUARDAR CANDIDATO".</p>
-                <ImageWrapper src="img/reclutador14.png" alt="Completar formulario" />
+              <StepBlock title="Paso 2: Detalles del Corte">
+                <p>Se desplegará una ficha donde podrá añadir notas sobre las preferencias del cliente (ej. Degradado medio, barba perfilada) para futuras visitas.</p>
+                <ImageWrapper src="img/barbero_notas.png" alt="Notas del corte" />
               </StepBlock>
 
-              <SectionTitle id="verf">Verificar creación de candidatos</SectionTitle>
-
-              <StepBlock title="Paso 1: Acceder al Dashboard Global">
-                <p>Tras finalizar la carga masiva o el registro único de candidatos, haga clic en la opción "Dashboard Global" en la barra de navegacion.</p>
-                <ImageWrapper src="img/reclutador15.png" alt="Dashboard global" />
+              <StepBlock title="Paso 3: Finalizar y Sincronizar">
+                <p>Una vez completado el corte, haga clic en el botón “FINALIZAR SERVICIO” para actualizar el estado de la cita a "Completado" y liberar su agenda.</p>
+                <ImageWrapper src="img/barbero_finalizar.png" alt="Finalizar servicio" />
               </StepBlock>
 
-              <StepBlock title="Paso 2: Selección de la OPR">
-                <p>Seleccione la OPR que desea consultar para visualizar la lista de candidatos asociados.</p>
-                <ImageWrapper src="img/reclutador16.png" alt="Selección OPR consulta" />
+              <SectionTitle id="corte-especial">Programar Servicio Especial</SectionTitle>
+
+              <StepBlock title="Paso 1: Servicios a domicilio o VIP">
+                <p>Para agendar un bloqueo de tiempo largo o un servicio VIP, haga clic en “Programar Servicio Especial” en el menú.</p>
+                <ImageWrapper src="img/barbero_vip.png" alt="Servicio especial" />
               </StepBlock>
 
-              <StepBlock>
-                <p>En esta sección se listan los candidatos asignados a la OPR. Puede desplazarse horizontalmente para consultar el estado del proceso de cada uno. Para ver la información detallada de un candidato, haga clic en el icono del ojo.</p>
-                <ImageWrapper src="img/reclutador17.png" alt="Lista candidatos" />
+              <StepBlock title="Paso 2: Confirmar bloque de agenda">
+                <p>Tras seleccionar los detalles y el tiempo requerido, haga clic en “CONFIRMAR BLOQUEO” para cerrar ese espacio en su agenda pública.</p>
+                <ImageWrapper src="img/barbero_bloqueo.png" alt="Confirmar bloqueo" />
               </StepBlock>
 
-              <StepBlock>
-                <p>Este módulo permite visualizar la información del candidato, la cual se actualiza progresivamente a medida que avanza el proceso hasta la contratación final.</p>
-                <ImageWrapper src="img/reclutador18.png" alt="Información candidato" />
-              </StepBlock>
-
-              <SectionTitle id="pobla">Reclutamiento</SectionTitle>
-
-              <StepBlock title="Paso 1: Ingresar al Formulario Reclutador">
-                <p>Para comenzar, seleccione "Formulario Reclutador" desde la barra de navegación del sistema.</p>
-                <ImageWrapper src="img/reclutador19.png" alt="Formulario Reclutador" />
-              </StepBlock>
-
-              <StepBlock title="Paso 2: Seleccionar una OPR">
-                <p>Al ingresar al módulo, elija la OPR correspondiente de la lista de opciones activas.</p>
-                <ImageWrapper src="img/reclutador20.png" alt="Elegir OPR" />
-              </StepBlock>
-
-              <StepBlock title="Paso 3: Selección del candidato">
-                <p>Tras seleccionar la OPR, elija al candidato correspondiente y haga clic en "Completar".</p>
-                <ImageWrapper src="img/reclutador21.png" alt="Elegir candidato" />
-              </StepBlock>
-
-              <StepBlock title="Paso 4: Completar formulario">
-                <p>Se desplegará un formulario para completar la información necesaria y continuar con el proceso.</p>
-                <ImageWrapper src="img/reclutador22.png" alt="Llenar formulario" />
-              </StepBlock>
-
-              <StepBlock title="Paso 5: Sincronización de datos">
-                <p>Después de completar la totalidad del formulario, haga clic en el botón “SINCRONIZAR DATOS” para finalizar el proceso.</p>
-                <ImageWrapper src="img/reclutador23.png" alt="Sincronizar datos" />
-              </StepBlock>
-
-              <StepBlock title="Paso 6: Verificación de datos">
-                <p>Tras hacer clic en “SINCRONIZAR DATOS”, el sistema realizará una validación automática. Verifique en pantalla que el mensaje de confirmación indique que la información se ha guardado correctamente; al finalizar, el estado cambiará automáticamente de “Pendiente” a “Completado”.</p>
-                <ImageWrapper src="img/reclutador24.png" alt="Verificación datos" />
-              </StepBlock>
-
-              <SectionTitle id="ases">Solicitar assesment</SectionTitle>
-
-              <StepBlock title="Paso 1: Acceso a la generación de assessments">
-                <p>Para acceder al módulo de generación de assessments, haga clic en la opción “Solicitar Assessment” ubicada en la barra de navegación del sistema.</p>
-                <ImageWrapper src="img/reclutador25.png" alt="Generar assessment" />
-              </StepBlock>
-
-              <StepBlock title="Paso 2: Seleccionar OPR">
-                <p>Seleccione la OPR correspondiente para iniciar la generación de la cita de Assessment. Tras completar los datos del formulario, diríjase a la sección "Selección masiva de candidatos". Apareceran los candidatos en el proceso. Puede enviar la notificación a todos los candidatos o filtrar únicamente a aquellos que continúan en el proceso.</p>
-                <ImageWrapper src="img/reclutador26.png" alt="Selección masiva" />
-              </StepBlock>
-
-              <StepBlock title="Paso 3: Confirmar cita">
-                <p>Tras seleccionar a los candidatos y completar la totalidad del formulario, haga clic en el botón “CONFIRMAR CITA” para finalizar la programación.</p>
-                <ImageWrapper src="img/reclutador27.png" alt="Confirmar cita" />
-              </StepBlock>
-
-              <StepBlock>
-                <p>Tras la creación de la cita, aparecerá un mensaje de confirmación indicando: "Cita agendada correctamente".</p>
-                <ImageWrapper src="img/reclutador28.png" alt="Confirmación cita" />
-              </StepBlock>
-
-              <SectionTitle id="agensd">Citas agendadas</SectionTitle>
-
-              <StepBlock title="Paso 1: Acceso al módulo de citas agendadas">
-                <p>Para comenzar, seleccione la opción “Citas agendadas” ubicada en la barra de navegación del sistema.</p>
-                <ImageWrapper src="img/reclutador29.png" alt="Citas agendadas" />
-              </StepBlock>
-
-              <StepBlock>
-                <p>En esta sección del módulo podrá visualizar todas las citas creadas, así como su estado actual. Para acceder a la sesión, haga clic en el botón "Link" correspondiente a la cita deseada.</p>
-                <ImageWrapper src="img/reclutador30.png" alt="Link cita" />
-              </StepBlock>
             </div>
           )}
 
-          {/* === SECCIÓN: MÓDULO administrador === */}
-          {activeSection === "analisis" && (
+          {/* === SECCIÓN: MÓDULO ADMINISTRADOR === */}
+          {activeSection === "modulo-admin" && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <SectionTitle id="anal">Análisis</SectionTitle>
+              <SectionTitle id="panel-admin">Panel de Control</SectionTitle>
 
-              <StepBlock title="Modulo analisis">
-                <p>Al iniciar sesión, accederá a la vista principal del Módulo de Analisis. Desde aquí podrá gestionar a los candidatos citados assesment y generar su calificación.</p>
-                <ImageWrapper src="img/analisis.png" alt="Módulo Análisis" />
+              <StepBlock title="Módulo de Administración">
+                <p>Al iniciar sesión con credenciales de dueño/gerente, accederá a la vista principal del Módulo de Administración. Desde aquí podrá gestionar las sucursales, barberos, finanzas y revisar las calificaciones del servicio.</p>
+                <ImageWrapper src="img/admin_dashboard.png" alt="Dashboard Administrador" />
               </StepBlock>
 
-              <SectionTitle id="cita">Citas assesment</SectionTitle>
+              <SectionTitle id="control-reservas">Control General de Citas</SectionTitle>
 
-              <StepBlock title="Submódulos">
-                <p>En el panel izquierdo encontrará la barra de navegación del sistema. Haga clic en "Análisis" para desplegar todas las opciones disponibles.</p>
-                <ImageWrapper src="img/analisis2.png" alt="Navegación Análisis" />
+              <StepBlock title="Monitoreo de Agenda">
+                <p>En el panel izquierdo, haga clic en "Control General de Citas".</p>
+                <ImageWrapper src="img/admin_nav.png" alt="Navegación Administración" />
               </StepBlock>
 
-              <StepBlock title="Paso 1: ingresar al modulo">
-                <p>En el panel izquierdo encontrará la barra de navegación del sistema. Haga clic en "Citas agendadas" para desplegar todas las opciones disponibles.</p>
-                <ImageWrapper src="img/analisis3.png" alt="Citas agendadas Análisis" />
-              </StepBlock>
-
-              <StepBlock title="citas Agendadas">
-                <p className="mb-2">En esta sección, el perfil de <strong className="font-semibold text-slate-800">Analista</strong> podrá visualizar las citas programadas para los assessments. El sistema permite realizar las siguientes acciones:</p>
+              <StepBlock title="Gestión de Citas Globales">
+                <p className="mb-2">En esta sección, el perfil de <strong className="font-semibold text-slate-800">Administrador</strong> podrá visualizar la agenda de todos los barberos del local. El sistema permite realizar las siguientes acciones:</p>
                 <ul className="ml-5 list-disc space-y-1 text-slate-600">
-                  <li><strong className="font-medium text-slate-800">Gestión de estados:</strong> Es posible actualizar el estado de la cita según el progreso de la sesión, seleccionando entre: <em className="italic">Pendiente</em>, <em className="italic">Realizada</em> o <em className="italic">Rechazada</em>.</li>
-                  <li><strong className="font-medium text-slate-800">Acceso a la reunión:</strong> Para ingresar a la sesión virtual, haga clic en el botón "Unirse" correspondiente a la cita deseada.</li>
+                  <li><strong className="font-medium text-slate-800">Gestión de turnos:</strong> Puede reasignar citas si un barbero no está disponible, cambiando el estado a: <em className="italic">Pendiente</em>, <em className="italic">Completada</em> o <em className="italic">Cancelada</em>.</li>
+                  <li><strong className="font-medium text-slate-800">Supervisión en tiempo real:</strong> Vea qué sillas de la barbería están ocupadas en el momento actual.</li>
                 </ul>
-                <ImageWrapper src="img/analisis4.png" alt="Gestión citas" />
+                <ImageWrapper src="img/admin_supervision.png" alt="Supervisión de citas" />
               </StepBlock>
 
-              <SectionTitle id="cal">Calificacion assesment</SectionTitle>
+              <SectionTitle id="evaluacion">Evaluación de Servicio</SectionTitle>
 
-              <StepBlock title="Paso 1: ingresar al modulo">
-                <p>En el panel izquierdo encontrará la barra de navegación del sistema. Haga clic en "Calificación Assesment" para desplegar todas las opciones disponibles.</p>
-                <ImageWrapper src="img/analisis5.png" alt="Calificación Assessment" />
+              <StepBlock title="Paso 1: Ingresar al módulo de Reseñas">
+                <p>En la barra de navegación, haga clic en "Evaluación de Servicio" para ver el feedback dejado por los clientes.</p>
+                <ImageWrapper src="img/admin_reviews.png" alt="Módulo de evaluaciones" />
               </StepBlock>
 
-              <StepBlock title="Paso 2: Buscar OPR">
-                <p>Ingrese el número de la OPR que desea calificar en la barra de búsqueda y haga clic en el botón "Recargar" para visualizar los registros correspondientes.</p>
-                <ImageWrapper src="img/analisis6.png" alt="Buscar OPR" />
+              <StepBlock title="Paso 2: Buscar Reserva (Ticket)">
+                <p>Ingrese el número de comprobante o ticket de la reserva en la barra de búsqueda y haga clic en "Recargar" para aislar la calificación de un corte en específico.</p>
+                <ImageWrapper src="img/admin_buscar_ticket.png" alt="Buscar ticket" />
               </StepBlock>
 
-              <StepBlock title="Paso 3: Buscar candidato">
-                <p>Ingrese el número de documento de identificación del candidato en la barra de búsqueda y haga clic en el botón “Analizar” para proceder con la calificación del assessment.</p>
-                <ImageWrapper src="img/analisis7.png" alt="Analizar candidato" />
-              </StepBlock>
-
-              <StepBlock>
-                <p>Tras completar el formulario, haga clic en el botón “FINALIZAR EVALUACIÓN” para concluir el proceso.</p>
-                <ImageWrapper src="img/analisis9.png" alt="Finalizar evaluación" />
+              <StepBlock title="Paso 3: Analizar desempeño del barbero">
+                <p>Revise los comentarios del cliente, la propina dejada en la pasarela de pago y las estrellas del servicio. Haga clic en “Cerrar Ticket” tras su revisión.</p>
+                <ImageWrapper src="img/admin_cierre_review.png" alt="Análisis de servicio" />
               </StepBlock>
             </div>
           )}

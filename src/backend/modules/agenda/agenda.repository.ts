@@ -81,12 +81,12 @@ export class AgendaRepository {
 
   // Buscar citas de un barbero para una fecha específica
   async buscarCitasFecha(cedula_barbero: string, fecha: Date) {
-    // Configuramos la fecha para que abarque todo el día (00:00:00 a 23:59:59)
+    // Configuramos la fecha para que abarque todo el día en estricto UTC
     const inicioDia = new Date(fecha);
-    inicioDia.setHours(0, 0, 0, 0);
+    inicioDia.setUTCHours(0, 0, 0, 0);
 
     const finDia = new Date(fecha);
-    finDia.setHours(23, 59, 59, 999);
+    finDia.setUTCHours(23, 59, 59, 999);
 
     return prisma.cita.findMany({
       where: {

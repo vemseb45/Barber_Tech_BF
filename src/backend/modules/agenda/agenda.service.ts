@@ -27,10 +27,10 @@ export class AgendaService {
       citas = await this.repository.buscarCitasRango(cedula, new Date(fechaInicio), new Date(fechaFin));
     } else if (fecha) {
       // SOLUCIÓN ZONA HORARIA: 
-      // Separar el string y construir la fecha localmente para ignorar el UTC por defecto
+      // Construimos la fecha forzando UTC para evitar el desfase horario
       const [y, m, d] = fecha.split('-').map(Number);
-      const fechaObj = new Date(y, m - 1, d);
-      
+      const fechaObj = new Date(Date.UTC(y, m - 1, d));
+
       citas = await this.repository.buscarCitasFecha(cedula, fechaObj);
     } else {
       throw new Error("Debes enviar fecha o rango (fechaInicio y fechaFin)");
