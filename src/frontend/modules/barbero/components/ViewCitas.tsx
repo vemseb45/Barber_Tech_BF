@@ -1,8 +1,17 @@
 'use client';
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, forwardRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Calendar, Clock, User, CheckCircle2, XCircle, Coffee, AlertTriangle, Scissors } from "lucide-react";
 import { jwtDecode } from "jwt-decode";
+
+// Nuevas importaciones para el calendario profesional
+import DatePicker, { registerLocale } from 'react-datepicker';
+import "react-datepicker/dist/react-datepicker.css";
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+
+// Registrar el idioma español para el calendario
+registerLocale('es', es);
 
 interface Cita {
   id: number;
@@ -16,54 +25,69 @@ interface Cita {
   estado: string;
 }
 
+// Componente personalizado para el input del calendario
+const CustomDateInput = forwardRef<HTMLButtonElement, any>(
+  ({ value, onClick, placeholder }, ref) => (
+    <button
+      type="button"
+      onClick={onClick}
+      ref={ref}
+      className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold outline-none cursor-pointer px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-primary/20 hover:border-primary/50 transition-all text-sm shadow-sm flex items-center justify-between min-w-[140px]"
+    >
+      <span className="tracking-wide">
+        {value ? (
+          <span>{value}</span>
+        ) : (
+          <span className="text-slate-400 dark:text-slate-500">{placeholder}</span>
+        )}
+      </span>
+    </button>
+  )
+);
+CustomDateInput.displayName = 'CustomDateInput';
+
+
 export default function ViewCitas() {
   const [citasDelDia, setCitasDelDia] = useState<Cita[]>([]);
-  const [fechaFiltro, setFechaFiltro] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [fechaFiltro, setFechaFiltro] = useState<Date>(new Date());
   const [cargando, setCargando] = useState<boolean>(false);
   const [miIdBarbero, setMiIdBarbero] = useState<string | null>(null);
+  
+  // Estados para controlar los modales de cancelación y finalización
+  const [citaACancelar, setCitaACancelar] = useState<number | null>(null);
+  const [citaAFinalizar, setCitaAFinalizar] = useState<number | null>(null);
 
   // 1. OBTENER Y DECODIFICAR EL TOKEN AL MONTAR EL COMPONENTE
   useEffect(() => {
-    console.log("🔍 [1] Componente montado. Buscando token en localStorage...");
     const token = localStorage.getItem("token");
 
     if (!token) {
-      console.error("❌ [1.1] No se encontró ningún 'token' en el localStorage. Revisa cómo lo estás guardando al iniciar sesión.");
+      console.error("No se encontró ningún 'token' en el localStorage.");
       return;
     }
 
     try {
       const decoded: any = jwtDecode(token);
-      console.log("📦 [1.2] Token decodificado correctamente. Contenido del payload:", decoded);
-
-      // Intentamos leer el ID desde las propiedades más comunes en payloads JWT
       const idDetectado = decoded.user_id || decoded.id || decoded.sub || decoded.cedula;
 
       if (idDetectado) {
-        console.log(`✅ [1.3] ID del barbero detectado con éxito: ${idDetectado}`);
         setMiIdBarbero(String(idDetectado));
       } else {
-        console.warn("⚠️ [1.4] El token existe pero no contiene las propiedades 'user_id', 'id', 'sub' ni 'cedula'. Revisa la estructura de tu JWT.");
+        console.warn("El token no contiene un ID válido.");
       }
     } catch (error) {
-      console.error("❌ [1.5] Error crítico al decodificar el token JWT:", error);
+      console.error("Error al decodificar el token JWT:", error);
     }
   }, []);
 
   useEffect(() => {
-    console.log(`🔄 [2] useEffect de carga disparado. BarberoID actual: '${miIdBarbero}', Fecha Filtro: '${fechaFiltro}'`);
-
     const cargarAgenda = async () => {
-      if (!miIdBarbero) {
-        console.warn("⏳ [2.1] Esperando a que se establezca miIdBarbero antes de disparar el fetch...");
-        return;
-      }
+      if (!miIdBarbero) return;
 
       setCargando(true);
       const token = localStorage.getItem("token");
-
-      const urlApi = `/api/agenda/miAgenda?barberoId=${miIdBarbero}&fecha=${fechaFiltro}`;
-      console.log(`🚀 [2.2] Enviando petición HTTP FETCH a: ${urlApi}`);
+      const fechaFormatStr = format(fechaFiltro, 'yyyy-MM-dd');
+      const urlApi = `/api/agenda/miAgenda?barberoId=${miIdBarbero}&fecha=${fechaFormatStr}`;
 
       try {
         const res = await fetch(urlApi, {
@@ -76,9 +100,7 @@ export default function ViewCitas() {
           cache: "no-store"
         });
 
-        console.log(`📡 [2.3] Respuesta recibida del servidor. Status Code: ${res.status}`);
         const response = await res.json();
-        console.log("📊 [2.4] Datos parseados de la respuesta de la API:", response);
 
         let citas: Cita[] = [];
         if (response.success && Array.isArray(response.data)) {
@@ -87,10 +109,9 @@ export default function ViewCitas() {
           citas = response;
         }
 
-        console.log(`✨ [2.5] Total de citas mapeadas en estado: ${citas.length}`);
         setCitasDelDia(citas);
       } catch (error) {
-        console.error("❌ [2.6] Error de conexión o de red al intentar ejecutar el fetch:", error);
+        console.error("Error al cargar la agenda:", error);
         setCitasDelDia([]);
       } finally {
         setCargando(false);
@@ -100,33 +121,41 @@ export default function ViewCitas() {
     cargarAgenda();
   }, [fechaFiltro, miIdBarbero]);
 
-  const handleFinalizar = async (id: number) => {
+  // Función modificada para procesar la finalización desde el modal
+  const confirmarFinalizacion = async () => {
+    if (citaAFinalizar === null) return;
+    
     const token = localStorage.getItem("token");
     try {
-      // La URL ahora es estática: /api/citas/finalizar
       const res = await fetch(`/api/citas/finalizar`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
         },
-        // Enviamos el ID en el body
-        body: JSON.stringify({ id })
+        body: JSON.stringify({ id: citaAFinalizar })
       });
 
       const data = await res.json();
       if (!res.ok) {
         alert("Error: " + (data.message || "No se pudo finalizar la cita"));
+        setCitaAFinalizar(null);
         return;
       }
-      setCitasDelDia(prev => prev.filter(c => c.id !== id));
+      
+      // Si fue exitoso, cerramos modal y removemos la cita
+      setCitasDelDia(prev => prev.filter(c => c.id !== citaAFinalizar));
+      setCitaAFinalizar(null);
     } catch (error) {
       alert("Error al conectar con el servidor");
+      setCitaAFinalizar(null);
     }
   };
 
-  const handleCancelar = async (id: number) => {
-    if (!window.confirm("¿Estás seguro de que deseas cancelar esta cita?")) return;
+  // Función modificada para procesar la cancelación desde el modal
+  const confirmarCancelacion = async () => {
+    if (citaACancelar === null) return;
+    
     const token = localStorage.getItem("token");
     try {
       const res = await fetch(`/api/citas/cancelar`, {
@@ -135,16 +164,20 @@ export default function ViewCitas() {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
         },
-        body: JSON.stringify({ id })
+        body: JSON.stringify({ id: citaACancelar })
       });
       const data = await res.json();
       if (!res.ok) {
         alert("Error: " + (data.message || "No se pudo cancelar la cita"));
+        setCitaACancelar(null);
         return;
       }
-      setCitasDelDia(prev => prev.filter(c => c.id !== id));
+      // Si fue exitoso, cerramos modal y removemos la cita
+      setCitasDelDia(prev => prev.filter(c => c.id !== citaACancelar));
+      setCitaACancelar(null);
     } catch (error) {
       alert("Error al conectar con el servidor");
+      setCitaACancelar(null);
     }
   };
 
@@ -165,13 +198,16 @@ export default function ViewCitas() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/50 p-2 pl-5 rounded-[20px] border border-slate-100 dark:border-slate-700 w-full md:w-auto">
+        {/* INPUT DE CALENDARIO CUSTOMIZADO */}
+        <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/50 p-2 pl-5 rounded-[20px] border border-slate-100 dark:border-slate-700 w-full md:w-auto relative z-20">
           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Fecha</span>
-          <input
-            type="date"
-            value={fechaFiltro}
-            onChange={(e) => setFechaFiltro(e.target.value)}
-            className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold outline-none cursor-pointer px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-primary/20 transition-all text-sm shadow-sm"
+          <DatePicker
+            selected={fechaFiltro}
+            onChange={(date: Date | null) => setFechaFiltro(date || new Date())}
+            locale="es"
+            dateFormat="dd MMM yyyy"
+            placeholderText="Seleccionar fecha"
+            customInput={<CustomDateInput />}
           />
         </div>
       </div>
@@ -267,7 +303,8 @@ export default function ViewCitas() {
                       <motion.button
                         whileHover={{ y: -2 }}
                         whileTap={{ scale: 0.95 }}
-                        onClick={() => handleFinalizar(cita.id)}
+                        // Actualizado para abrir el modal de finalizar
+                        onClick={() => setCitaAFinalizar(cita.id)}
                         className="flex items-center justify-center gap-2 py-3.5 bg-primary text-white rounded-2xl font-bold text-xs shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all"
                       >
                         <CheckCircle2 size={16} /> Finalizar
@@ -275,7 +312,7 @@ export default function ViewCitas() {
                       <motion.button
                         whileHover={{ y: -2 }}
                         whileTap={{ scale: 0.95 }}
-                        onClick={() => handleCancelar(cita.id)}
+                        onClick={() => setCitaACancelar(cita.id)}
                         className="flex items-center justify-center gap-2 py-3.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-2xl font-bold text-xs hover:bg-red-500 hover:text-white dark:hover:bg-red-600 transition-all"
                       >
                         <XCircle size={16} /> Cancelar
@@ -288,6 +325,90 @@ export default function ViewCitas() {
           </div>
         )}
       </div>
+
+      {/* MODAL DE CONFIRMACIÓN DE FINALIZACIÓN */}
+      <AnimatePresence>
+        {citaAFinalizar !== null && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-white dark:bg-slate-900 rounded-[30px] p-6 max-w-sm w-full shadow-2xl border border-slate-100 dark:border-slate-800 text-center"
+            >
+              <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-4 text-emerald-500">
+                <CheckCircle2 size={32} />
+              </div>
+              <h3 className="text-xl font-black text-slate-800 dark:text-white mb-2">¿Finalizar Cita?</h3>
+              <p className="text-slate-500 text-sm font-medium mb-6">
+                Esta acción marcará el servicio como completado. ¿Estás seguro de que deseas continuar?
+              </p>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setCitaAFinalizar(null)}
+                  className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl font-bold text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                >
+                  Volver
+                </button>
+                <button
+                  onClick={confirmarFinalizacion}
+                  className="flex-1 py-3 bg-emerald-500 text-white rounded-xl font-bold text-sm hover:bg-emerald-600 shadow-lg shadow-emerald-500/30 transition-all"
+                >
+                  Sí, finalizar
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL DE CONFIRMACIÓN DE CANCELACIÓN */}
+      <AnimatePresence>
+        {citaACancelar !== null && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-white dark:bg-slate-900 rounded-[30px] p-6 max-w-sm w-full shadow-2xl border border-slate-100 dark:border-slate-800 text-center"
+            >
+              <div className="w-16 h-16 bg-red-50 dark:bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
+                <AlertTriangle size={32} />
+              </div>
+              <h3 className="text-xl font-black text-slate-800 dark:text-white mb-2">¿Cancelar Cita?</h3>
+              <p className="text-slate-500 text-sm font-medium mb-6">
+                Esta acción cancelará el turno y notificará al cliente. ¿Estás seguro de que deseas continuar?
+              </p>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setCitaACancelar(null)}
+                  className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl font-bold text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                >
+                  Volver
+                </button>
+                <button
+                  onClick={confirmarCancelacion}
+                  className="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold text-sm hover:bg-red-600 shadow-lg shadow-red-500/30 transition-all"
+                >
+                  Sí, cancelar
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

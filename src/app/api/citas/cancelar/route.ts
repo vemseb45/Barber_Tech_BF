@@ -6,15 +6,17 @@ const controller = new CitaController();
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json();
-    // Extraemos id_cita en lugar de id
-    const { id_cita } = body; 
+    
+    // Extraemos 'id' (que es lo que manda el Front) o 'id_cita' por compatibilidad
+    const id = body.id || body.id_cita; 
 
-    if (!id_cita) {
+    if (!id) {
       return NextResponse.json({ success: false, message: 'ID no proporcionado' }, { status: 400 });
     }
 
-    // Pasamos el ID al controlador
-    return controller.cancelarCita(request, parseInt(id_cita));
+    // Pasamos el ID al controlador asegurándonos de que sea un número
+    return controller.cancelarCita(request, parseInt(id));
+    
   } catch (error) {
     return NextResponse.json({ success: false, message: 'Error en la petición' }, { status: 400 });
   }

@@ -39,14 +39,12 @@ const MENU_DATA: MenuSection[] = [
     menuId: "modulo-barbero",
     title: "Módulo Barbero",
     subItems: [
-      { id: "directorio", label: "Directorio de Clientes" },
-      { id: "gestion-citas", label: "Gestión de Reservas" },
-      { id: "servicios", label: "Configurar Servicios" },
-      { id: "nuevo-cliente", label: "Registrar Nuevo Cliente" },
-      { id: "verificacion", label: "Verificación de Asistencia" },
-      { id: "atencion", label: "Atención en Barbería" },
-      { id: "corte-especial", label: "Programar Servicio Especial" },
-      { id: "citas-asignadas", label: "Agenda del Día" },
+      { id: "panel-barbero", label: "Panel del Barbero" },
+      { id: "gestion-agenda", label: "Gestión de Agenda" },
+      { id: "cancelar-cita", label: "Cancelar Cita" },
+      { id: "finalizar-cita", label: "Finalizar Cita" },
+      { id: "servicios-realizados", label: "Servicios Realizados" },
+      { id: "servicios-cancelados", label: "Servicios Cancelados" },
     ],
   },
   {
@@ -155,8 +153,8 @@ export default function ManualUsuarioView() {
                     type="button"
                     onClick={() => handleMainMenuClick(menu.menuId)}
                     className={`flex w-full items-center justify-between px-5 py-3 text-sm font-medium transition-colors hover:bg-slate-50 hover:text-[#8519d2] ${isActivePadre
-                        ? "border-l-4 border-[#8519d2] text-[#8519d2] bg-slate-50/50"
-                        : "border-l-4 border-transparent text-slate-600"
+                      ? "border-l-4 border-[#8519d2] text-[#8519d2] bg-slate-50/50"
+                      : "border-l-4 border-transparent text-slate-600"
                       }`}
                   >
                     {menu.title}
@@ -356,103 +354,61 @@ export default function ManualUsuarioView() {
           {/* === SECCIÓN: MÓDULO BARBERO === */}
           {activeSection === "modulo-barbero" && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <SectionTitle id="directorio">Módulo Barbero</SectionTitle>
-
+              
+              <SectionTitle id="panel-barbero">Módulo Barbero</SectionTitle>
               <StepBlock title="Panel del Barbero">
                 <p>Al iniciar sesión con cuenta de empleado, accederá a la vista principal del Módulo Barbero. Desde aquí podrá gestionar su agenda, sus clientes y los cortes programados.</p>
-                <ImageWrapper src="img/barbero_dashboard.png" alt="Módulo Barbero" />
+                <ImageWrapper src="/Imagenes/manual_usuario/barbero.png" alt="Módulo Barbero" />
               </StepBlock>
 
-              <SectionTitle id="gestion-citas">Gestión de Reservas</SectionTitle>
-
-              <StepBlock title="Navegación Principal">
-                <p>En el panel izquierdo encontrará la barra de navegación del sistema. Haga clic en "Gestión de Reservas" para desplegar todas las opciones operativas.</p>
-                <ImageWrapper src="img/barbero_nav.png" alt="Navegación Barbero" />
+              <SectionTitle id="gestion-agenda">Gestión de Agenda</SectionTitle>
+              <StepBlock title="Paso 1: Acceder al modulo">
+                <p>En el panel izquierdo encontrará la barra de navegación del sistema. Haga clic en "Agenda" para acceder al modulo.</p>
+                <ImageWrapper src="/Imagenes/manual_usuario/agendab.png" alt="Navegación Barbero" />
+              </StepBlock>
+              <StepBlock title="Paso 2: Seleccionar fecha">
+                <p>Haga clic en la fecha del calendario para consultar la agenda.</p>
+                <ImageWrapper src="/Imagenes/manual_usuario/agendab1.png" alt="Navegación Barbero" />
               </StepBlock>
 
-              <StepBlock title="Directorio de Clientes">
-                <p>Al hacer clic en "Directorio", podrá visualizar la lista consolidada de todos los clientes registrados y atendidos en la barbería.</p>
-                <ImageWrapper src="img/barbero_directorio.png" alt="Directorio de clientes" />
+              <SectionTitle id="cancelar-cita">Cancelar Cita</SectionTitle>
+              <StepBlock title="Paso 1: Seleccionar fecha">
+                <p>Elija la fecha de la cita que desea cancelar y haga clic en el botón "Cancelar".</p>
+                <ImageWrapper src="/Imagenes/manual_usuario/cancelar.png" alt="Navegación Barbero" />
+              </StepBlock>
+              <StepBlock title="Paso 2: Confirmar">
+                <p>Para confirmar la cancelación de la cita, haga clic en "Sí, cancelar".</p>
+                <ImageWrapper src="/Imagenes/manual_usuario/cancelar1.png" alt="Navegación Barbero" />
               </StepBlock>
 
-              <StepBlock title="Historial de Servicios">
-                <p>Al hacer clic en "Historial", podrá visualizar el registro de todos los servicios y cortes procesados anteriormente en su turno.</p>
-                <ImageWrapper src="img/barbero_historial.png" alt="Historial de servicios" />
+              <SectionTitle id="finalizar-cita">Finalizar Cita</SectionTitle>
+              <StepBlock title="Paso 1: Seleccionar fecha">
+                <p>Elija la fecha de la cita que desea cancelar y haga clic en el botón "Finalizar".</p>
+                <ImageWrapper src="/Imagenes/manual_usuario/finalizar.png" alt="Navegación Barbero" />
+              </StepBlock>
+              <StepBlock title="Paso 2: Confirmar">
+                <p>Para confirmar la Finalización de la cita, haga clic en "Sí, finalizar".</p>
+                <ImageWrapper src="/Imagenes/manual_usuario/finalizar1.png" alt="Navegación Barbero" />
               </StepBlock>
 
-              <SectionTitle id="servicios">Configurar Servicios de Barbería</SectionTitle>
-
-              <StepBlock title="Paso 1: Acceder al catálogo de servicios">
-                <p>Para agregar nuevos tipos de cortes o combos, acceda al submódulo haciendo clic en la opción "Configuración de Servicios".</p>
-                <ImageWrapper src="img/barbero_servicios.png" alt="Catálogo de servicios" />
+              <SectionTitle id="servicios-realizados">Servicios Realizados</SectionTitle>
+              <StepBlock title="Paso 1: Acceder al modulo">
+                <p>En el panel izquierdo encontrará la barra de navegación del sistema. Haga clic en "Servicios realizados" para acceder al modulo.</p>
+                <ImageWrapper src="/Imagenes/manual_usuario/serviciosr.png" alt="Catálogo de servicios" />
+              </StepBlock>
+              <StepBlock>
+                <p>En el panel se puede visualizar la cantidad de servicios realizados y el monto total de las ganancias.</p>
+                <ImageWrapper src="/Imagenes/manual_usuario/serviciosr1.png" alt="Catálogo de servicios" />
               </StepBlock>
 
-              <StepBlock title="Paso 2: Selección de categoría">
-                <p>Haga clic en "Elegir categoría" para desplegar la lista (ej. Cabello, Barba, Cejas, Combos).</p>
-                <ImageWrapper src="img/barbero_categoria.png" alt="Selección de categoría" />
+              <SectionTitle id="servicios-cancelados">Servicios Cancelados</SectionTitle>
+              <StepBlock title="Paso 1: Acceder al modulo">
+                <p>En el panel izquierdo encontrará la barra de navegación del sistema. Haga clic en "Servicios cancelados" para acceder al modulo.</p>
+                <ImageWrapper src="/Imagenes/manual_usuario/cancelados.png" alt="Catálogo de servicios" />
               </StepBlock>
-
-              <StepBlock title="Paso 3: Carga de catálogo (Opcional)">
-                <p>Si desea importar una lista de precios, descargue la plantilla haciendo clic en el siguiente enlace:
-                  <a href="formato/Servicios.xlsx" download="Servicios_Barberia.xlsx" className="font-semibold text-[#8519d2] hover:underline ml-1">
-                    Descargar el formato aquí
-                  </a>.
-                </p>
-                <p className="mt-2">Una vez diligenciado, arrastre el archivo al área designada o haga clic en "Subir lista de precios".</p>
-                <ImageWrapper src="img/barbero_carga_precios.png" alt="Cargar archivo" />
-              </StepBlock>
-
-              <SectionTitle id="nuevo-cliente">Registrar Nuevo Cliente Manualmente</SectionTitle>
-
-              <StepBlock title="Paso 1: Acceder al Registro">
-                <p>Para registrar a un cliente que llegó sin cita previa (Walk-in), acceda haciendo clic en "Registrar Nuevo Cliente".</p>
-                <ImageWrapper src="img/barbero_registro_cliente.png" alt="Registro único" />
-              </StepBlock>
-
-              <StepBlock title="Paso 2: Completar el formulario">
-                <p>Complete los datos básicos de contacto del cliente y el servicio requerido, luego haga clic en "GUARDAR CLIENTE".</p>
-                <ImageWrapper src="img/barbero_form_cliente.png" alt="Formulario cliente" />
-              </StepBlock>
-
-              <SectionTitle id="verificacion">Verificación de Asistencia</SectionTitle>
-
-              <StepBlock title="Paso 1: Acceder a la Agenda del Día">
-                <p>Desde su dashboard principal, haga clic en "Agenda del Día" para ver los clientes programados.</p>
-                <ImageWrapper src="img/barbero_agenda.png" alt="Agenda del día" />
-              </StepBlock>
-
-              <StepBlock title="Paso 2: Confirmar llegada">
-                <p>En esta sección se listan las reservas. Para ver el detalle de un cliente o marcar su llegada, haga clic en el icono del ojo y luego en "Marcar Asistencia".</p>
-                <ImageWrapper src="img/barbero_asistencia.png" alt="Lista de reservas" />
-              </StepBlock>
-
-              <SectionTitle id="atencion">Atención en Barbería</SectionTitle>
-
-              <StepBlock title="Paso 1: Iniciar Servicio">
-                <p>Seleccione la reserva correspondiente desde su agenda y haga clic en "Iniciar Servicio".</p>
-                <ImageWrapper src="img/barbero_iniciar.png" alt="Iniciar servicio" />
-              </StepBlock>
-
-              <StepBlock title="Paso 2: Detalles del Corte">
-                <p>Se desplegará una ficha donde podrá añadir notas sobre las preferencias del cliente (ej. Degradado medio, barba perfilada) para futuras visitas.</p>
-                <ImageWrapper src="img/barbero_notas.png" alt="Notas del corte" />
-              </StepBlock>
-
-              <StepBlock title="Paso 3: Finalizar y Sincronizar">
-                <p>Una vez completado el corte, haga clic en el botón “FINALIZAR SERVICIO” para actualizar el estado de la cita a "Completado" y liberar su agenda.</p>
-                <ImageWrapper src="img/barbero_finalizar.png" alt="Finalizar servicio" />
-              </StepBlock>
-
-              <SectionTitle id="corte-especial">Programar Servicio Especial</SectionTitle>
-
-              <StepBlock title="Paso 1: Servicios a domicilio o VIP">
-                <p>Para agendar un bloqueo de tiempo largo o un servicio VIP, haga clic en “Programar Servicio Especial” en el menú.</p>
-                <ImageWrapper src="img/barbero_vip.png" alt="Servicio especial" />
-              </StepBlock>
-
-              <StepBlock title="Paso 2: Confirmar bloque de agenda">
-                <p>Tras seleccionar los detalles y el tiempo requerido, haga clic en “CONFIRMAR BLOQUEO” para cerrar ese espacio en su agenda pública.</p>
-                <ImageWrapper src="img/barbero_bloqueo.png" alt="Confirmar bloqueo" />
+              <StepBlock>
+                <p>En el panel se puede visualizar la cantidad de servicios cancelados y el monto total de las perdidas.</p>
+                <ImageWrapper src="/Imagenes/manual_usuario/cancelados1.png" alt="Catálogo de servicios" />
               </StepBlock>
 
             </div>
